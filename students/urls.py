@@ -12,7 +12,7 @@ from django.urls import path
 from .apiviews import StudentCreate, StudentLogin, StudentAuthenticationTest
 
 urlpatterns = [
-    path("api/v1/student/register", StudentCreate.as_view(), name="student_create"),
-    path("api/v1/student/login", StudentLogin.as_view(), name="student_login"),
-    path("api/v1/student/test", StudentAuthenticationTest.as_view(), name="student_test"),
+    path("v1/api/student/register", StudentCreate.as_view(), name="student_create"),
+    path("v1/api/student/login", StudentLogin.as_view(), name="student_login"),
+    path("v1/api/student/test", StudentAuthenticationTest.as_view(), name="student_test"),
 ]

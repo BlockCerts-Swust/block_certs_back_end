@@ -64,7 +64,6 @@ class StudentLogin(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST, content_type="application/json")
 
             StudentToken.objects.update_or_create(student=student)
-            print(student.studenttoken.key)
             return Response({"code": 1000, "msg": "操作成功", "data": {"student":{
                 "email_address": student.email_address,
                 "first_name": student.first_name,

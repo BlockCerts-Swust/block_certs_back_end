@@ -26,6 +26,16 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# 配置允许跨域请求的URL
+CORS_ORIGIN_WHITELIST  =(
+     'http://127.0.0.1:8080',
+)
+
+# 防止CSRF
+CSRF_TRUSTED_ORIGINS = (
+    'change.allowed.com',
+)
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -47,12 +57,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
     'schools',
     'students',
     'verifier'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
