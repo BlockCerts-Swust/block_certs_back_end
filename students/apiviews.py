@@ -49,19 +49,19 @@ class StudentLogin(APIView):
             if email_address is None or password is None:
                 return Response({
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码不能为空"}
-                }, status=status.HTTP_400_BAD_REQUEST, content_type="application/json")
+                }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
             student = Student.objects.filter(email_address=email_address).first()
             if not student:
                 return Response({
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
-                }, status=status.HTTP_400_BAD_REQUEST, content_type="application/json")
+                }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
             result = check_password(password, student.password)
 
             if result is not True:
                 return Response({
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
-                }, status=status.HTTP_400_BAD_REQUEST, content_type="application/json")
+                }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
             StudentToken.objects.update_or_create(student=student)
             return Response({"code": 1000, "msg": "操作成功", "data": {"student":{
