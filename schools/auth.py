@@ -10,18 +10,17 @@
 """
 from rest_framework import exceptions
 from rest_framework.authentication import BasicAuthentication
-from students.models import StudentToken, Student
+from schools.models import SchoolToken, School
 
-class StudentAuthentication(BasicAuthentication):
+class SchoolAuthentication(BasicAuthentication):
     def authenticate(self, request):
         key = request.headers.get("Api-Http-Authorization")
         if key is None:
             exceptions.AuthenticationFailed({"code": 1002, "msg": "操作失败",
                                              "data": {"error": "缺少 API-HTTP-AUTHORIZATION 请求头"}})
-        key = request.headers.get("Api-Http-Authorization")
-        token = StudentToken.objects.filter(key=key).first()
+        token = SchoolToken.objects.filter(key=key).first()
         if token:
-            student = Student.objects.filter(id=token.student_id).first()
+            student = School.objects.filter(id=token.school_id).first()
             return (student, token)
         else:
             raise exceptions.AuthenticationFailed({"code": 1002, "msg":"操作失败",

@@ -20,13 +20,11 @@ from .serializers import StudentSerializer
 from students.hashers import check_password
 
 
-class StudentCreate(generics.ListCreateAPIView):
+class StudentCreate(generics.CreateAPIView):
     # Note the authentication_classes = () and permission_classes = () to exempt UserCreate
     # from global authentication scheme.
     permission_classes = (BasePermission, )
     serializer_class = StudentSerializer
-
-    queryset = Student.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -70,6 +68,7 @@ class StudentLogin(APIView):
                 "last_name": student.last_name,
                 "student_num": student.student_num,
                 "chain_address": student.chain_address,
+                "register_date": student.register_date
             },
                 "token": student.studenttoken.key
             }}, content_type="application/json")

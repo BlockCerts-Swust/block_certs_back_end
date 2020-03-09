@@ -8,26 +8,29 @@
 @Version   : 1.0
 @Description: 
 """
-from django.contrib.auth.models import User
+from schools.models import School, SchoolToken
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token
 
 
 class SchoolSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = User
-        fields = ('username', 'email', 'password')
-        extra_kwargs = {'password': {'write_only': True}}
+        model = School
+        fields = "__all__"
+        extra_kwargs = {'password': {'write_only': True}, 'id': {'read_only': True}}
 
     def create(self, validated_data):
-        user = User(
-            email=validated_data['email'],
-            username=validated_data['username']
+        school = School(
+            school_name=validated_data["school_name"],
+            address = validated_data["address"],
+            official_website = validated_data["official_website"],
+            public_key = validated_data["public_key"],
+            email_address = validated_data["email_address"],
+            password = validated_data["password"]
         )
         # setting the raw password as the hash
-        user.set_password(validated_data['password'])
-        user.save()
+        school.set_password(validated_data['password'])
+        school.save()
         # ensure that tokens are created when user is created in UserCreate view
-        Token.objects.create(user=user)
-        return user
+        SchoolToken.objects.create(school=school)
+        return school

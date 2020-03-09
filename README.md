@@ -34,7 +34,19 @@ Excute command:
 
 ## Notice
         
-    
+Response {"code": 1000, "msg": "操作成功", "data": {...}}
+Response {"code": 1001, "msg": "操作失败", "data": {...}}
+
+code:
+    1000 login/register successful
+    1001 login/register failed
+    1002 API-HTTP-AUTHORIZATION 请求头无效或为空
+
+## Common commands
+
+python manage.py makemigrations
+
+python manage.py migrate
 
 ## Project
 ```
