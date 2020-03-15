@@ -21,11 +21,14 @@ from schools.models import School, SchoolToken
 from students.hashers import check_password
 
 
-class SchoolCreate(generics.CreateAPIView):
+class SchoolCreate(generics.ListCreateAPIView):
     # Note the authentication_classes = () and permission_classes = () to exempt UserCreate
     # from global authentication scheme.
     permission_classes = (BasePermission, )
     serializer_class = SchoolSerializer
+
+    def queryset(self):
+        School.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
