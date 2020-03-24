@@ -16,7 +16,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 
-router.register(r'v1/api/file', FileViewSet, basename='file')
+router.register(r'v1/api/files', FileViewSet, basename='file')
 
 # ^ ^v1/api/file/$ [name='file-list']
 # ^ ^v1/api/file\.(?P<format>[a-z0-9]+)/?$ [name='file-list']
