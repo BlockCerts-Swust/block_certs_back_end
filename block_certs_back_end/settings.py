@@ -56,11 +56,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_mongoengine',
     'rest_framework.authtoken',
     'corsheaders',
     'schools',
     'students',
-    'verifier'
+    'verifier',
+    'common'
 ]
 
 MIDDLEWARE = [
@@ -100,10 +102,26 @@ WSGI_APPLICATION = 'block_certs_back_end.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'block_certs',
+        'USER': 'root',
+        'PASSWORD': '123456@signit',
+        'HOST': '74.82.214.120',
+        'PORT': 3306
     }
 }
+
+import mongoengine
+
+mongoengine.connect(
+    db="block_certs",
+    host="74.82.214.120",
+    port=27017,
+    username="root",
+    password="123456@signit",
+    authentication_mechanism="SCRAM-SHA-1",
+    authentication_source='admin'
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

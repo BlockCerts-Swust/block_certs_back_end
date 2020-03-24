@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^', include('students.urls')),
     re_path(r'^', include('schools.urls')),
+    re_path(r'^', include('common.urls')),
     # re_path(r'^', include('verifier.urls')),
 ]

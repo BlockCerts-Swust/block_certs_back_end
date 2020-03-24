@@ -4,7 +4,7 @@
 @Email     : 2482003411@qq.com
 @License   : Copyright(C), Jess
 @Time      : 2020/2/27 14:30
-@File      : api views.py
+@File      : api apiviews.py
 @Version   : 1.0
 @Description: 
 """
@@ -23,7 +23,7 @@ from students.hashers import check_password
 class StudentCreate(generics.CreateAPIView):
     # Note the authentication_classes = () and permission_classes = () to exempt UserCreate
     # from global authentication scheme.
-    permission_classes = (BasePermission, )
+    permission_classes = (BasePermission,)
     serializer_class = StudentSerializer
 
     def create(self, request, *args, **kwargs):
@@ -37,8 +37,8 @@ class StudentCreate(generics.CreateAPIView):
 
 
 class StudentLogin(APIView):
-    permission_classes = (BasePermission, )
-    parser_classes = (JSONParser, )
+    permission_classes = (BasePermission,)
+    parser_classes = (JSONParser,)
 
     def post(self, request):
         email_address = request.data.get("email_address")
@@ -62,7 +62,7 @@ class StudentLogin(APIView):
                 }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
             StudentToken.objects.update_or_create(student=student)
-            return Response({"code": 1000, "msg": "操作成功", "data": {"student":{
+            return Response({"code": 1000, "msg": "操作成功", "data": {"student": {
                 "email_address": student.email_address,
                 "first_name": student.first_name,
                 "last_name": student.last_name,
@@ -78,9 +78,8 @@ class StudentLogin(APIView):
             }}, content_type="application/json")
 
 
-
 class StudentAuthenticationTest(APIView):
-    authentication_classes = (StudentAuthentication, )
+    authentication_classes = (StudentAuthentication,)
     permission_classes = (BasePermission,)
     parser_classes = (JSONParser,)
 

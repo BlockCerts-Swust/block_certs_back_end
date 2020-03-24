@@ -10,10 +10,11 @@
 """
 
 from django.urls import path
-from schools.apiviews import SchoolCreate, SchoolLogin, SchoolAuthenticationTest
+from schools.apiviews import SchoolCreate, SchoolLogin, SchoolAuthenticationTest, SchoolIssuerJson
 
 urlpatterns = [
     path("v1/api/school/register", SchoolCreate.as_view(), name="school_create"),
     path("v1/api/school/login", SchoolLogin.as_view(), name="school_login"),
     path("v1/api/school/test", SchoolAuthenticationTest.as_view(), name="school_test"),
+    path("v1/api/school/issuer/testnet", SchoolIssuerJson.as_view(), name="school_issuer_testnet"),
 ]
