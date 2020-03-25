@@ -10,11 +10,18 @@
 """
 
 from django.urls import path
-from schools.apiviews import SchoolCreate, SchoolLogin, SchoolAuthenticationTest, SchoolIssuerJson
+from rest_framework.routers import DefaultRouter
+
+from schools.apiviews import SchoolCreate, SchoolLogin, SchoolAuthenticationTest, SchoolIssuerJson, SchoolViewSet
+router = DefaultRouter()
+
+router.register(r'v1/api/schools', SchoolViewSet, basename='school')
 
 urlpatterns = [
-    path("v1/api/school/register", SchoolCreate.as_view(), name="school_create"),
-    path("v1/api/school/login", SchoolLogin.as_view(), name="school_login"),
-    path("v1/api/school/test", SchoolAuthenticationTest.as_view(), name="school_test"),
-    path("v1/api/school/issuer/testnet", SchoolIssuerJson.as_view(), name="school_issuer_testnet"),
+    path("v1/api/schools/register", SchoolCreate.as_view(), name="school_create"),
+    path("v1/api/schools/login", SchoolLogin.as_view(), name="school_login"),
+    path("v1/api/schools/test", SchoolAuthenticationTest.as_view(), name="school_test"),
+    path("v1/api/schools/issuer/testnet", SchoolIssuerJson.as_view(), name="school_issuer_testnet"),
 ]
+
+urlpatterns = urlpatterns + router.urls

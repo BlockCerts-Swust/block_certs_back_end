@@ -5,16 +5,25 @@ from students.hashers import make_password
 # Create your models here.
 
 class School(models.Model):
-    school_name = models.CharField(max_length=255, unique=True)
-    address = models.CharField(max_length=255)
+    context = models.CharField(max_length=255, default=[
+    "https://w3id.org/openbadges/v2",
+    "https://w3id.org/blockcerts/v2"
+  ])
+    type = models.CharField(default="Profile", max_length=128)
+    name = models.CharField(max_length=255, unique=True)
+    email = models.CharField(max_length=128, unique=True)
     official_website = models.CharField(max_length=255, unique=True)
+    id_url = models.CharField(max_length=255, unique=True)
+    revocation_list = models.CharField(max_length=255, unique=True)
+    introduction_url = models.CharField(max_length=255, unique=True)
     public_key = models.CharField(max_length=128, unique=True)
-    email_address = models.CharField(max_length=128, unique=True)
+    job_title = models.CharField(max_length=128)
+    signature_name = models.CharField(max_length=128)
+    signature_file_wsid = models.CharField(max_length=128)
+    logo_file_wsid = models.CharField(max_length=128)
     password = models.CharField(max_length=225)
     register_date = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.school_name, self.school_name
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)

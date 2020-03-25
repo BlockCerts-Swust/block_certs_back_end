@@ -21,11 +21,17 @@ class SchoolSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         school = School(
-            school_name=validated_data["school_name"],
-            address = validated_data["address"],
+            name=validated_data["name"],
+            email=validated_data["email"],
             official_website = validated_data["official_website"],
+            id_url = validated_data["id_url"],
+            revocation_list = validated_data["revocation_list"],
+            introduction_url=validated_data["introduction_url"],
             public_key = validated_data["public_key"],
-            email_address = validated_data["email_address"],
+            job_title= validated_data["job_title"],
+            signature_name=validated_data["signature_name"],
+            signature_file_wsid=validated_data["signature_file_wsid"],
+            logo_file_wsid = validated_data["logo_file_wsid"],
             password = validated_data["password"]
         )
         # setting the raw password as the hash
