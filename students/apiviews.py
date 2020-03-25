@@ -8,7 +8,7 @@
 @Version   : 1.0
 @Description: 
 """
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
@@ -91,3 +91,15 @@ class StudentAuthenticationTest(APIView):
                 "message": "Good Work!"
             }
         })
+
+class StudentViewSet(viewsets.ModelViewSet):
+    authentication_classes = (StudentAuthentication,)
+    permission_classes = (BasePermission, )
+    serializer_class = StudentSerializer
+    queryset = Student.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({"code": 1000, "msg": "操作成功", "data": {"student":serializer.data}})
+

@@ -9,10 +9,17 @@
 @Description: 
 """
 from django.urls import path
-from .apiviews import StudentCreate, StudentLogin, StudentAuthenticationTest
+from rest_framework.routers import DefaultRouter
+
+from .apiviews import StudentCreate, StudentLogin, StudentViewSet
+
+router = DefaultRouter()
+
+router.register(r'v1/api/students', StudentViewSet, basename='student')
 
 urlpatterns = [
     path("v1/api/students/register", StudentCreate.as_view(), name="student_create"),
-    path("v1/api/students/login", StudentLogin.as_view(), name="student_login"),
-    path("v1/api/students/test", StudentAuthenticationTest.as_view(), name="student_test"),
+    path("v1/api/students/login", StudentLogin.as_view(), name="student_login")
 ]
+
+urlpatterns = urlpatterns + router.urls
