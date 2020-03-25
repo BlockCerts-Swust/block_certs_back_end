@@ -1,11 +1,12 @@
 # Create your views here.
 import json
+from wsgiref.util import FileWrapper
 
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
-from django.http import FileResponse
+from django.http import FileResponse, StreamingHttpResponse, HttpResponse
 from rest_framework_mongoengine import viewsets
 from common.models import File
 from common.serializers import FileSerializer
@@ -21,18 +22,24 @@ class FileViewSet(viewsets.ModelViewSet):
     # post request, file upload
     def create(self, request, *args, **kwargs):
         # try:
-        files = request.FILES['file']
+        # , content_type=files.content_type
+        files = request.data['file']
         md5_obj = hashlib.md5()
         obj = File()
+        obj.file.put(files, content_type=files.content_type)
         for chunk in files.chunks():
-            obj.file.put(chunk)
             md5_obj.update(chunk)
         hash_code = md5_obj.hexdigest()
         file_wsid = 'file_wsid_' + str(hash_code).lower()
         obj.name = files.name
         obj.wsid = file_wsid
+        file_detail_url = "/v1/api/files/" + file_wsid
+        file_download_url = "/v1/api/files/" + file_wsid + "/download"
+        obj.file_detail_url = file_detail_url
+        obj.file_download_url = file_download_url
         obj.save()
-        return Response({"code": 1000, "msg": "操作成功", "data": {'wsid': file_wsid, 'name': files.name}},
+        return Response({"code": 1000, "msg": "操作成功", "data":
+            {'wsid': file_wsid, 'name': files.name, 'detail_url': file_detail_url, 'download_url': file_download_url}},
                         content_type="application/json",
                         status=status.HTTP_201_CREATED)
 
@@ -44,10 +51,13 @@ class FileViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # get request, /v1/api/file/file_wsid_d4c92a999ba116cb4b2947896dbfe34f/download
+    # https://github.com/MongoEngine/django-mongoengine/blob/master/example/tumblelog/tumblelog/views.py
     @action(methods=['get'], detail=True, url_path='download', url_name='download')
     def file_download(self, request, *args, **kwargs):
         instance = self.get_object()
-        response = FileResponse(instance.file.read())
-        response['Content-Type'] = 'application/octet-stream'
-        response['Content-Disposition'] = 'attachment;filename="{file_name}"'.format(file_name=instance.name)
-        return response
+        instance.file.seek(0)
+        files = instance.file.read()
+        return HttpResponse(
+            files,
+            content_type=instance.file.content_type,
+        )
