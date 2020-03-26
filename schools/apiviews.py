@@ -33,6 +33,8 @@ class SchoolCreate(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = request.data
         data["id_url"] = "/v1/api/schools/"+data["public_key"] + "/issue/info"
+        # "introduction_url": "http://www.swust.edu.cn/intro/",
+        data["introduction_url"] = request.data["official_website"] + "intro/" if request.data["official_website"].endswith('/') else "/intro/"
         data["revocation_list"] = "/v1/api/schools/" + data["public_key"] + "/certificates/revocations"
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -105,19 +107,14 @@ class SchoolViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True, url_path='issue/info', url_name='issue-info')
     def issue_info(self, request, *args, **kwargs):
-        import base64
-        import requests as req
-        from io import BytesIO
+        from common.common_function import get_image_base_64,get_full_url
         import ast
         instance = self.get_object()
-        response = req.get('http://127.0.0.1:8000/v1/api/files/'+instance.logo_file_wsid+'/download')
-        ls_f = base64.b64encode(BytesIO(response.content).read())
-        # 打印出这个base64编码
-        print(type(ls_f))
+        ls_f = get_image_base_64(instance.logo_file_wsid)
         return Response({
             "@context":ast.literal_eval(instance.context),
             "type": instance.type,
-            "id": instance.id_url,
+            "id": get_full_url(instance.id_url),
             "name": instance.name,
             "url": instance.official_website,
             "introductionURL": instance.introduction_url,
@@ -127,7 +124,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
                     "created": ""
                 }
             ],
-            "revocationList": instance.revocation_list,
+            "revocationList": get_full_url(instance.revocation_list),
             "image": "data:image/png;base64,"+ls_f,
             "email": instance.email
         })
