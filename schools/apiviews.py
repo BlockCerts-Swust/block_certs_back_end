@@ -16,25 +16,26 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from schools.auth import SchoolAuthentication
-from schools.serializers import SchoolSerializer
-from schools.models import School, SchoolToken
+from schools.serializers import SchoolSerializer, RevocationSerializer
+from schools.models import School, SchoolToken, Revocation
 from students.hashers import check_password
 
 
-class SchoolCreate(generics.ListCreateAPIView):
+class SchoolCreate(generics.CreateAPIView):
     # Note the authentication_classes = () and permission_classes = () to exempt UserCreate
     # from global authentication scheme.
     permission_classes = (BasePermission, )
     serializer_class = SchoolSerializer
 
-    def queryset(self):
-        School.objects.all()
-
     def create(self, request, *args, **kwargs):
         data = request.data
         data["id_url"] = "/v1/api/schools/"+data["public_key"] + "/issue/info"
         # "introduction_url": "http://www.swust.edu.cn/intro/",
-        data["introduction_url"] = request.data["official_website"] + "intro/" if request.data["official_website"].endswith('/') else "/intro/"
+        if request.data["official_website"].endswith('/'):
+            introduction_url = request.data["official_website"] + "intro/"
+        else:
+            introduction_url = request.data["official_website"] + "/intro/"
+        data["introduction_url"] = introduction_url
         data["revocation_list"] = "/v1/api/schools/" + data["public_key"] + "/certificates/revocations"
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -94,7 +95,7 @@ class SchoolLogin(APIView):
             }}, content_type="application/json")
 
 class SchoolViewSet(viewsets.ModelViewSet):
-    authentication_classes = (SchoolAuthentication,)
+    # authentication_classes = (SchoolAuthentication,)
     permission_classes = (BasePermission, )
     serializer_class = SchoolSerializer
     lookup_field = "public_key"
@@ -128,3 +129,29 @@ class SchoolViewSet(viewsets.ModelViewSet):
             "image": "data:image/png;base64,"+ls_f,
             "email": instance.email
         })
+
+    class RevocationViewSet(viewsets.ModelViewSet):
+        authentication_classes = (SchoolAuthentication,)
+        permission_classes = (BasePermission, )
+        serializer_class = RevocationSerializer
+        lookup_field = "public_key"
+        queryset = Revocation.objects.all()
+
+        def create(self, request, *args, **kwargs):
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        def update(self, request, *args, **kwargs):
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+        def retrieve(self, request, *args, **kwargs):
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
