@@ -12,14 +12,16 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from schools.apiviews import SchoolCreate, SchoolLogin, SchoolViewSet
+from schools.apiviews import SchoolCreate, SchoolLogin, SchoolViewSet, RevocationView
 router = DefaultRouter()
 
 router.register(r'v1/api/schools', SchoolViewSet, basename='school')
+# router.register(r"v1/api/schools", RevocationViewSet, basename='school')
 
 urlpatterns = [
     path("v1/api/schools/register", SchoolCreate.as_view(), name="school_create"),
-    path("v1/api/schools/login", SchoolLogin.as_view(), name="school_login")
+    path("v1/api/schools/login", SchoolLogin.as_view(), name="school_login"),
+    path("v1/api/schools/<public_key>/certificates/revocations/", RevocationView.as_view(), name="school_revocation")
 ]
 
 urlpatterns = urlpatterns + router.urls

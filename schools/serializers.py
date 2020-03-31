@@ -8,7 +8,7 @@
 @Version   : 1.0
 @Description: 
 """
-from schools.models import School, SchoolToken
+from schools.models import School, SchoolToken, Revocation
 from rest_framework import serializers
 
 
@@ -40,3 +40,9 @@ class SchoolSerializer(serializers.ModelSerializer):
         # ensure that tokens are created when user is created in UserCreate view
         SchoolToken.objects.create(school=school)
         return school
+
+class RevocationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Revocation
+        fields = "__all__"

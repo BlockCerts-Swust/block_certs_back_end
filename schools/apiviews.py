@@ -13,12 +13,15 @@ from rest_framework import generics, status, viewsets
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
+from rest_framework.settings import APISettings, DEFAULTS, IMPORT_STRINGS
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from schools.auth import SchoolAuthentication
 from schools.serializers import SchoolSerializer, RevocationSerializer
 from schools.models import School, SchoolToken, Revocation
 from students.hashers import check_password
+from common.common_function import get_image_base_64, get_full_url
+import ast
 
 
 class SchoolCreate(generics.CreateAPIView):
@@ -108,8 +111,6 @@ class SchoolViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True, url_path='issue/info', url_name='issue-info')
     def issue_info(self, request, *args, **kwargs):
-        from common.common_function import get_image_base_64,get_full_url
-        import ast
         instance = self.get_object()
         ls_f = get_image_base_64(instance.logo_file_wsid)
         return Response({
@@ -130,28 +131,139 @@ class SchoolViewSet(viewsets.ModelViewSet):
             "email": instance.email
         })
 
-    class RevocationViewSet(viewsets.ModelViewSet):
-        authentication_classes = (SchoolAuthentication,)
-        permission_classes = (BasePermission, )
-        serializer_class = RevocationSerializer
-        lookup_field = "public_key"
-        queryset = Revocation.objects.all()
+api_settings = APISettings(None, DEFAULTS, IMPORT_STRINGS)
 
-        def create(self, request, *args, **kwargs):
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+class RevocationView(APIView):
+    permission_classes = (BasePermission, )
+    serializer_class = RevocationSerializer
+    lookup_field = "public_key"
+    queryset = Revocation.objects.all()
 
-        def update(self, request, *args, **kwargs):
-            partial = kwargs.pop('partial', False)
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
+    def get_authenticators(self):
+        """
+        Instantiates and returns the list of authenticators that this view can use.
+        """
+        if self.request.method == 'PUT':
+            authentication_classes = (SchoolAuthentication,)
+        elif self.request.method == 'POST':
+            authentication_classes = (SchoolAuthentication,)
+        elif self.request.method == 'DELETE':
+            authentication_classes = (SchoolAuthentication,)
+        else:
+            authentication_classes = ()
 
-        def retrieve(self, request, *args, **kwargs):
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
+        return [auth() for auth in authentication_classes]
+
+
+    def post(self, request, public_key):
+        data = request.data
+        data["public_key"] = public_key
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response({"code": 1000, "msg": "操作成功", "data": {"revocation": serializer.data}},
+                        status=status.HTTP_201_CREATED,
+                        headers=headers)
+
+
+    def put(self, request, public_key):
+        uuid = request.data["uuid"]
+        obj = Revocation.objects.filter(uuid=uuid).filter(public_key=public_key).first()
+        if obj is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书ID不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        data["public_key"] = public_key
+        serializer = self.get_serializer(obj, data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(obj, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            obj._prefetched_objects_cache = {}
+
+        return Response({"code": 1000, "msg": "操作成功", "data": {"revocation": serializer.data}},
+                        status=status.HTTP_200_OK)
+
+    def get(self, request, public_key):
+        school = School.objects.filter(public_key=public_key).first()
+        if school is None:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "学校不存在"}})
+        revocations = Revocation.objects.filter(public_key=public_key).all()
+        revocation_list = []
+        for revocation in revocations:
+            detail = {
+                "id": revocation.uuid,
+                "revocationReason": revocation.revocationReason
+            }
+            revocation_list.append(detail)
+        return Response({
+            "@context": ast.literal_eval(school.context),
+            "id": get_full_url(school.revocation_list),
+            "type": "RevocationList",
+            "issuer": get_full_url(school.id_url),
+            "revokedAssertions": revocation_list
+        })
+
+    def delete(self, request, public_key):
+        uuid = request.data["uuid"]
+        obj = Revocation.objects.filter(uuid=uuid).filter(public_key=public_key).first()
+        if obj is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书ID不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        self.perform_destroy(obj)
+        return Response({"code": 1000, "msg": "操作成功", "data": {"uuid": uuid}}, status=status.HTTP_204_NO_CONTENT)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def get_serializer(self, *args, **kwargs):
+        """
+        Return the serializer instance that should be used for validating and
+        deserializing input, and for serializing output.
+        """
+        serializer_class = self.get_serializer_class()
+        kwargs['context'] = self.get_serializer_context()
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_class(self):
+        """
+        Return the class to use for the serializer.
+        Defaults to using `self.serializer_class`.
+
+        You may want to override this if you need to provide different
+        serializations depending on the incoming request.
+
+        (Eg. admins get full serialization, others get basic serialization)
+        """
+        assert self.serializer_class is not None, (
+            "'%s' should either include a `serializer_class` attribute, "
+            "or override the `get_serializer_class()` method."
+            % self.__class__.__name__
+        )
+
+        return self.serializer_class
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
+
+    def perform_destroy(self, instance):
+        instance.delete()

@@ -45,3 +45,8 @@ class SchoolToken(models.Model):
 
     def __str__(self):
         return self.key
+
+class Revocation(models.Model):
+    uuid = models.CharField(max_length=128)
+    revocationReason = models.CharField(max_length=128)
+    public_key = models.CharField(max_length=128, unique=True)
