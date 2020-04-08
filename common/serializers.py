@@ -9,13 +9,20 @@
 @Description: 
 """
 
-from rest_framework_mongoengine import serializers
+from rest_framework_mongoengine import serializers as mongoengine_serializers
+from rest_framework import serializers
+from common.models import File, Cert
 
-from common.models import File
 
-
-class FileSerializer(serializers.DocumentSerializer):
+class FileSerializer(mongoengine_serializers.DocumentSerializer):
 
     class Meta:
         model = File
+        fields = '__all__'
+
+
+class CertSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Cert
         fields = '__all__'

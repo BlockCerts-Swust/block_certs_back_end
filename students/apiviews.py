@@ -8,16 +8,27 @@
 @Version   : 1.0
 @Description: 
 """
-from rest_framework import generics, status, viewsets
+from django.db.models import QuerySet
+from rest_framework import generics, status, viewsets, mixins
+from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_mongoengine import viewsets as mongoengine_viewsets
+from students.instantiate_v2_certificate_batch import instantiate_batch
+from rest_framework_mongoengine.viewsets import GenericViewSet
+from schools.models import School
 
+from common import common_function
+from common.models import Cert
+from common.serializers import CertSerializer
+from students import helpers
 from students.auth import StudentAuthentication
-from students.models import Student, StudentToken
-from .serializers import StudentSerializer
+from students.models import Student, StudentToken, UnsignCert
+from .serializers import StudentSerializer, UnsignCertSerializer
 from students.hashers import check_password
+import json
 
 
 class StudentCreate(generics.CreateAPIView):
@@ -77,21 +88,6 @@ class StudentLogin(APIView):
                 "error": e
             }}, content_type="application/json")
 
-
-class StudentAuthenticationTest(APIView):
-    authentication_classes = (StudentAuthentication,)
-    permission_classes = (BasePermission,)
-    parser_classes = (JSONParser,)
-
-    def get(self, request):
-        return Response({
-            "code": 1000,
-            "msg": "操作成功",
-            "data": {
-                "message": "Good Work!"
-            }
-        })
-
 class StudentViewSet(viewsets.ModelViewSet):
     authentication_classes = (StudentAuthentication,)
     permission_classes = (BasePermission, )
@@ -103,3 +99,237 @@ class StudentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response({"code": 1000, "msg": "操作成功", "data": {"student":serializer.data}})
 
+class UnsignCertViewSet(mixins.RetrieveModelMixin,
+                   GenericViewSet):
+    authentication_classes = (StudentAuthentication,)
+    permission_classes = (BasePermission, )
+    serializer_class = UnsignCertSerializer
+    queryset = UnsignCert.objects.all()
+    lookup_field = 'wsid'
+
+    @action(methods=['get'], detail=True, url_path='detail', url_name='cert-info')
+    def cert_info(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+                     status=status.HTTP_401_UNAUTHORIZED,
+                     content_type="application/json")
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        pass
+
+    def retrieve(self, request, *args, **kwargs):
+        pass
+
+    def update(self, request, *args, **kwargs):
+        pass
+
+    def destroy(self, request, *args, **kwargs):
+        pass
+
+class CertViewSet(viewsets.ModelViewSet):
+    authentication_classes = (StudentAuthentication,)
+    permission_classes = (BasePermission,)
+    serializer_class = CertSerializer
+    queryset = Cert.objects.all()
+    lookup_field = 'cert_id'
+
+    def create(self, request, *args, **kwargs):
+        issuer_name = request.data["issuer_name"]
+        conf = self.create_conf(issuer_name, request.data)
+        if conf is False:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "学校不存在"}})
+        certs = instantiate_batch(conf)
+        response_data = []
+        for uid in certs.keys():
+            # 存在mongodb里面的数据
+            unsign_cert_data = {"data": certs[uid]}
+            unsign_cert = UnsignCert(**unsign_cert_data)
+            unsign_cert.save()
+            # 存在mysql里面的证书信息
+            cert_data = self.create_cert_data(certs[uid], unsign_cert.wsid)
+            serializer = self.get_serializer(data=cert_data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            response_data.append(serializer.data)
+        return Response({"code": 1000, "msg": "操作成功", "data": response_data}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        if instance is None:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
+                     status=status.HTTP_400_BAD_REQUEST,
+                     content_type="application/json"
+                     )
+        if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+                     status=status.HTTP_401_UNAUTHORIZED,
+                     content_type="application/json")
+        issuer_name = request.data["issuer_name"]
+        conf = self.create_conf(issuer_name, request.data)
+        print("template conf", conf)
+        if conf is False:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "学校不存在"}},
+                     status=status.HTTP_400_BAD_REQUEST,
+                     content_type="application/json"
+                     )
+        old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
+        print("old_cert", old_cert)
+        if old_cert is None:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
+                     status=status.HTTP_400_BAD_REQUEST,
+                     content_type="application/json"
+                     )
+        certs = instantiate_batch(conf)
+        response_data = []
+        print("create certs", certs)
+        for uid in certs.keys():
+            # unsign_cert = UnsignCert(**certs[uid])
+            print("id", instance.cert_id)
+            new_cert_data = {"data": certs[uid]}
+            old_cert.update(**new_cert_data)
+            cert_data = self.create_cert_data(certs[uid], old_cert.wsid)
+            serializer = self.get_serializer(instance, data=cert_data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+            if getattr(instance, '_prefetched_objects_cache', None):
+                # If 'prefetch_related' has been applied to a queryset, we need to
+                # forcibly invalidate the prefetch cache on the instance.
+                instance._prefetched_objects_cache = {}
+            response_data.append(serializer.data)
+        return Response({"code": 1000, "msg": "操作成功", "data": response_data}, status=status.HTTP_201_CREATED)
+        # return Response({"code": 1000, "msg": "操作成功", "data": conf}, status=status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
+                Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+                         status=status.HTTP_401_UNAUTHORIZED,
+                         content_type="application/json")
+            old_cert = UnsignCert.objects.filter(id=instance.cert_id).first()
+            old_cert.delete()
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            print(e)
+            return Response(data={"code": 1001, "msg": "删除失败", "data": {"err": "证书不存在"}}, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
+            Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+                     status=status.HTTP_401_UNAUTHORIZED,
+                     content_type="application/json")
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        """
+        Get the list of items for this view.
+        This must be an iterable, and may be a queryset.
+        Defaults to using `self.queryset`.
+
+        This method should always be used rather than accessing `self.queryset`
+        directly, as `self.queryset` gets evaluated only once, and those results
+        are cached for all subsequent requests.
+
+        You may want to override this if you need to provide different
+        querysets depending on the incoming request.
+
+        (Eg. return a list of items that is specific to the user)
+        """
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            # Ensure queryset is re-evaluated on each request.
+            user = self.request.user
+            queryset = queryset.filter(student_pubkey="ecdsa-koblitz-pubkey:"+ user.chain_address).all()
+        return queryset
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+    def create_conf(self, issuer_name, data, badge_id=""):
+        issuer = School.objects.filter(name=issuer_name).first()
+        print("issuer", issuer)
+        if not issuer:
+            return False
+        issuer_image = helpers.png_prefix + common_function.get_image_base_64(issuer.logo_file_wsid)
+        issuer_id = common_function.get_full_url(issuer.id_url)
+        issuer_url = issuer.official_website
+        issuer_email = issuer.email
+        issuer_public_key = "ecdsa-koblitz-pubkey:" + issuer.public_key
+        issuer_job_title = issuer.job_title
+        signature_name = issuer.signature_name
+        signature_image_wsid = issuer.signature_file_wsid
+        revocation_list = common_function.get_full_url(issuer.revocation_list)
+        issuer_signature_lines = []
+        issuer_signature_lines.append(
+            {
+                "signature_image": helpers.png_prefix + common_function.get_image_base_64(signature_image_wsid),
+                "job_title": issuer_job_title,
+                "name": signature_name
+            })
+        recipients = [
+            {
+                "identity": self.request.user.email_address,
+                "name": self.request.user.first_name +" "+ self.request.user.last_name,
+                "pubkey": self.request.user.chain_address,
+                "additional_fields": ""
+            }
+        ]
+        conf = {
+            "badge_id": badge_id.replace("urn:uuid:", ""),
+            "cert_image": common_function.get_file_download_url(data["cert_image_wisd"]),
+            "issuer_logo": issuer_image,
+            "certificate_title": data["certificate_title"],
+            "certificate_description": data["certificate_description"],
+            "issuer_id": issuer_id,
+            "issuer_name": issuer_name,
+            "issuer_url": issuer_url,
+            "issuer_email": issuer_email,
+            "issuer_public_key": issuer_public_key,
+            "revocation_list": revocation_list,
+            "criteria_narrative": data["criteria_narrative"],
+            "issuer_signature_lines": issuer_signature_lines,
+            "hash_emails": data["hash_emails"],
+            "display_html": data["display_html"],
+            "additional_global_fields": data["additional_global_fields"],
+            "additional_per_recipient_fields": data["additional_per_recipient_fields"],
+            "recipients": recipients,
+            "filename_format": data["filename_format"]
+        }
+        return conf
+
+    def create_cert_data(self, data, cert_wsid):
+        return {
+        "certificate_description": data["badge"]["description"],
+        "certificate_title": data["badge"]["name"],
+        "criteria_narrative": data["badge"]["criteria"]["narrative"],
+        "cert_id": cert_wsid,
+        "student_name": data["recipientProfile"]["name"],
+        "student_pubkey": data["recipientProfile"]["publicKey"],
+        "email": data["recipient"]["identity"],
+        "school_pubkey": data["verification"]["publicKey"],
+        "status": 0
+        }

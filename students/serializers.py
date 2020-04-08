@@ -9,7 +9,8 @@
 @Description: 
 """
 from rest_framework import serializers
-from students.models import StudentToken, Student
+from rest_framework_mongoengine import serializers as mongoengine_serializers
+from students.models import StudentToken, Student, UnsignCert
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -35,3 +36,9 @@ class StudentSerializer(serializers.ModelSerializer):
         StudentToken.objects.create(student=student)
         return student
 
+
+class UnsignCertSerializer(mongoengine_serializers.DynamicDocumentSerializer):
+
+    class Meta:
+        model = UnsignCert
+        fields = "__all__"

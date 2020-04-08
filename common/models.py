@@ -2,6 +2,7 @@
 import datetime
 
 from mongoengine import FileField, StringField, Document, DateTimeField
+from django.db import models
 
 
 class File(Document):
@@ -14,3 +15,15 @@ class File(Document):
 
     class Meta:
         abstract = True
+
+class Cert(models.Model):
+    certificate_description = models.CharField(max_length=255)
+    certificate_title = models.CharField(max_length=255)
+    criteria_narrative = models.CharField(max_length=588)
+    cert_id = models.CharField(max_length=255)
+    student_name = models.CharField(max_length=255)
+    student_pubkey = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    school_pubkey = models.CharField(max_length=255)
+    status = models.IntegerField(default=0)
+    create_time = DateTimeField(default=datetime.datetime.now)

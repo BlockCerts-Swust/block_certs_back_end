@@ -6,14 +6,17 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
-from django.http import FileResponse, StreamingHttpResponse, HttpResponse
-from rest_framework_mongoengine import viewsets
-from common.models import File
-from common.serializers import FileSerializer
+from django.http import HttpResponse
+from rest_framework_mongoengine import viewsets as mongoengine_viewsets
+from rest_framework import viewsets
+from common.models import File, Cert
+from common.serializers import FileSerializer, CertSerializer
 import hashlib
 
+from students.auth import StudentAuthentication
 
-class FileViewSet(viewsets.ModelViewSet):
+
+class FileViewSet(mongoengine_viewsets.ModelViewSet):
     permission_classes = (BasePermission,)
     queryset = File.objects()
     serializer_class = FileSerializer
