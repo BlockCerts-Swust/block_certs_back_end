@@ -123,7 +123,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
             "publicKey": [
                 {
                     "id":"ecdsa-koblitz-pubkey:"+instance.public_key,
-                    "created": ""
+                    "created": instance.register_date
                 }
             ],
             "revocationList": get_full_url(instance.revocation_list),
