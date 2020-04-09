@@ -1,6 +1,7 @@
 # Create your models here.
 import datetime
 
+from django.utils import timezone
 from mongoengine import FileField, StringField, Document, DateTimeField
 from django.db import models
 
@@ -17,6 +18,7 @@ class File(Document):
         abstract = True
 
 class Cert(models.Model):
+    cert_image_wsid = models.CharField(max_length=100, unique=True)
     certificate_description = models.CharField(max_length=255)
     certificate_title = models.CharField(max_length=255)
     criteria_narrative = models.CharField(max_length=588)
@@ -26,4 +28,4 @@ class Cert(models.Model):
     email = models.CharField(max_length=255)
     school_pubkey = models.CharField(max_length=255)
     status = models.IntegerField(default=0)
-    create_time = DateTimeField(default=datetime.datetime.now)
+    create_time = models.DateTimeField(default=datetime.datetime.now)

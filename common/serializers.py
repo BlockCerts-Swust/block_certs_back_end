@@ -25,4 +25,4 @@ class CertSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cert
-        fields = '__all__'
+        fields = "__all__"

@@ -101,8 +101,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
 class UnsignCertViewSet(mixins.RetrieveModelMixin,
                    GenericViewSet):
-    authentication_classes = (StudentAuthentication,)
-    permission_classes = (BasePermission, )
+    permission_classes = (BasePermission,)
     serializer_class = UnsignCertSerializer
     queryset = UnsignCert.objects.all()
     lookup_field = 'wsid'
@@ -110,10 +109,6 @@ class UnsignCertViewSet(mixins.RetrieveModelMixin,
     @action(methods=['get'], detail=True, url_path='detail', url_name='cert-info')
     def cert_info(self, request, *args, **kwargs):
         instance = self.get_object()
-        if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
-                     status=status.HTTP_401_UNAUTHORIZED,
-                     content_type="application/json")
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -137,10 +132,21 @@ class CertViewSet(viewsets.ModelViewSet):
     lookup_field = 'cert_id'
 
     def create(self, request, *args, **kwargs):
+        cert_image_wsid = request.data["cert_image_wsid"]
+        cert = Cert.objects.filter(cert_image_wsid=cert_image_wsid,
+                                   student_pubkey="ecdsa-koblitz-pubkey:" + self.request.user.chain_address).first()
+        if cert:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已存在"}},
+                     status=status.HTTP_400_BAD_REQUEST,
+                     content_type="application/json"
+                     )
         issuer_name = request.data["issuer_name"]
         conf = self.create_conf(issuer_name, request.data)
-        if conf is False:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "学校不存在"}})
+        if conf[0] is False:
+            return Response({"code": 1001, "msg": "操作失败", "data": conf[1]},
+                     status=status.HTTP_400_BAD_REQUEST,
+                     content_type="application/json"
+                     )
         certs = instantiate_batch(conf)
         response_data = []
         for uid in certs.keys():
@@ -149,7 +155,7 @@ class CertViewSet(viewsets.ModelViewSet):
             unsign_cert = UnsignCert(**unsign_cert_data)
             unsign_cert.save()
             # 存在mysql里面的证书信息
-            cert_data = self.create_cert_data(certs[uid], unsign_cert.wsid)
+            cert_data = self.create_cert_data(certs[uid], unsign_cert.wsid, cert_image_wsid)
             serializer = self.get_serializer(data=cert_data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -171,8 +177,8 @@ class CertViewSet(viewsets.ModelViewSet):
         issuer_name = request.data["issuer_name"]
         conf = self.create_conf(issuer_name, request.data)
         print("template conf", conf)
-        if conf is False:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "学校不存在"}},
+        if conf[0] is False:
+            return Response({"code": 1001, "msg": "操作失败", "data": conf[1]},
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
@@ -191,7 +197,8 @@ class CertViewSet(viewsets.ModelViewSet):
             print("id", instance.cert_id)
             new_cert_data = {"data": certs[uid]}
             old_cert.update(**new_cert_data)
-            cert_data = self.create_cert_data(certs[uid], old_cert.wsid)
+            cert_data = self.create_cert_data(certs[uid], old_cert.wsid,
+                                              request.data["cert_image_wsid"])
             serializer = self.get_serializer(instance, data=cert_data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
@@ -221,7 +228,7 @@ class CertViewSet(viewsets.ModelViewSet):
                 Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
                          status=status.HTTP_401_UNAUTHORIZED,
                          content_type="application/json")
-            old_cert = UnsignCert.objects.filter(id=instance.cert_id).first()
+            old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
             old_cert.delete()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -273,7 +280,7 @@ class CertViewSet(viewsets.ModelViewSet):
         issuer = School.objects.filter(name=issuer_name).first()
         print("issuer", issuer)
         if not issuer:
-            return False
+            return False, {"err": "学校不存在"}
         issuer_image = helpers.png_prefix + common_function.get_image_base_64(issuer.logo_file_wsid)
         issuer_id = common_function.get_full_url(issuer.id_url)
         issuer_url = issuer.official_website
@@ -298,9 +305,12 @@ class CertViewSet(viewsets.ModelViewSet):
                 "additional_fields": ""
             }
         ]
+        cert_image = common_function.get_file_download_url(data["cert_image_wsid"])
+        if cert_image is False:
+            return False, {"err": "证书文件不存在"}
         conf = {
             "badge_id": badge_id.replace("urn:uuid:", ""),
-            "cert_image": common_function.get_file_download_url(data["cert_image_wisd"]),
+            "cert_image": cert_image,
             "issuer_logo": issuer_image,
             "certificate_title": data["certificate_title"],
             "certificate_description": data["certificate_description"],
@@ -321,8 +331,9 @@ class CertViewSet(viewsets.ModelViewSet):
         }
         return conf
 
-    def create_cert_data(self, data, cert_wsid):
+    def create_cert_data(self, data, cert_wsid, cert_image_wsid):
         return {
+        "cert_image_wsid": cert_image_wsid,
         "certificate_description": data["badge"]["description"],
         "certificate_title": data["badge"]["name"],
         "criteria_narrative": data["badge"]["criteria"]["narrative"],
@@ -333,3 +344,6 @@ class CertViewSet(viewsets.ModelViewSet):
         "school_pubkey": data["verification"]["publicKey"],
         "status": 0
         }
+
+    def data_check(self):
+        pass

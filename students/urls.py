@@ -17,7 +17,7 @@ router = DefaultRouter()
 
 router.register(r'v1/api/students', StudentViewSet, basename='student')
 router.register(r'v1/api/certificates', CertViewSet, basename='certificates')
-router.register(r'v1/api/certificates/unsign', UnsignCertViewSet, basename='certificates')
+router.register(r'v1/api/certificates', UnsignCertViewSet, basename='certificates')
 
 urlpatterns = [
     path("v1/api/students/register", StudentCreate.as_view(), name="student_create"),

@@ -1,10 +1,11 @@
 import binascii
+import datetime
 import os
 import uuid
 
 from django.db import models
 from students.hashers import make_password
-from mongoengine import DynamicDocument, ListField, StringField, DictField
+from mongoengine import DynamicDocument, ListField, StringField, DictField, DateTimeField
 
 
 # Create your models here.
@@ -45,12 +46,3 @@ class StudentToken(models.Model):
 class UnsignCert(DynamicDocument):
     wsid = StringField(default="cert_wsid_" + str(uuid.uuid4()), primary_key=True)
     data = DictField()
-    # context = ListField(verbose_name="@context")
-    # type = StringField(max_length=40)
-    # displayHtml = StringField(max_length=255)
-    # issuedOn = StringField(max_length=255)
-    # id = StringField(required=True, max_length=300)
-    # recipient = DictField()
-    # recipientProfile = DictField()
-    # badge = DictField()
-    # verification = DictField()

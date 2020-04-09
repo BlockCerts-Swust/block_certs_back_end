@@ -14,13 +14,25 @@ import requests as req
 from io import BytesIO
 from block_certs_back_end.settings import BASE_URL
 def get_image_base_64(file_wsid):
-    response = req.get(BASE_URL+'/v1/api/files/' + file_wsid + '/download')
-    ls_f = base64.b64encode(BytesIO(response.content).read()).decode('utf-8')
-    # 打印出这个base64编码
-    return ls_f
+    try:
+        response = req.get(BASE_URL+'/v1/api/files/' + file_wsid + '/download')
+        ls_f = base64.b64encode(BytesIO(response.content).read()).decode('utf-8')
+        # 打印出这个base64编码
+        return ls_f
+    except Exception as e:
+        print(e)
+        return False
 
 def get_full_url(path):
     return BASE_URL+ path
 
 def get_file_download_url(file_wsid):
-    return BASE_URL+'/v1/api/files/' + file_wsid + '/download'
+    try:
+        url = BASE_URL+'/v1/api/files/' + file_wsid + '/download'
+        response = req.get(url)
+        if response.status_code == 200:
+            return url
+        return False
+    except Exception as e:
+        print(e)
+        return False
