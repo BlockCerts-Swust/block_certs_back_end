@@ -166,14 +166,19 @@ class CertViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         if instance is None:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
         if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
                      status=status.HTTP_401_UNAUTHORIZED,
                      content_type="application/json")
+        if instance.status == 1:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已经发布，无法修改"}},
+                     status=status.HTTP_401_UNAUTHORIZED,
+                     content_type="application/json")
+
         issuer_name = request.data["issuer_name"]
         conf = self.create_conf(issuer_name, request.data)
         print("template conf", conf)
@@ -185,7 +190,7 @@ class CertViewSet(viewsets.ModelViewSet):
         old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
         print("old_cert", old_cert)
         if old_cert is None:
-            Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
@@ -228,6 +233,10 @@ class CertViewSet(viewsets.ModelViewSet):
                 Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
                          status=status.HTTP_401_UNAUTHORIZED,
                          content_type="application/json")
+            if instance.status == 1:
+                return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已经发布，无法删除"}},
+                                status=status.HTTP_401_UNAUTHORIZED,
+                                content_type="application/json")
             old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
             old_cert.delete()
             self.perform_destroy(instance)
