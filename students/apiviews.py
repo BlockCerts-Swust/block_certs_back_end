@@ -141,13 +141,13 @@ class CertViewSet(viewsets.ModelViewSet):
                      content_type="application/json"
                      )
         issuer_name = request.data["issuer_name"]
-        conf = self.create_conf(issuer_name, request.data)
-        if conf[0] is False:
-            return Response({"code": 1001, "msg": "操作失败", "data": conf[1]},
+        result, msg = self.create_conf(issuer_name, request.data)
+        if result is False:
+            return Response({"code": 1001, "msg": "操作失败", "data": msg},
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
-        certs = instantiate_batch(conf)
+        certs = instantiate_batch(msg)
         response_data = []
         for uid in certs.keys():
             # 存在mongodb里面的数据
@@ -170,7 +170,7 @@ class CertViewSet(viewsets.ModelViewSet):
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
-        if "ecdsa-koblitz-pubkey:" + instance.student_pubkey != self.request.user.chain_address:
+        if instance.student_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.chain_address:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
                      status=status.HTTP_401_UNAUTHORIZED,
                      content_type="application/json")
@@ -180,10 +180,10 @@ class CertViewSet(viewsets.ModelViewSet):
                      content_type="application/json")
 
         issuer_name = request.data["issuer_name"]
-        conf = self.create_conf(issuer_name, request.data)
-        print("template conf", conf)
-        if conf[0] is False:
-            return Response({"code": 1001, "msg": "操作失败", "data": conf[1]},
+        result, msg = self.create_conf(issuer_name, request.data)
+        print("template conf", msg)
+        if result is False:
+            return Response({"code": 1001, "msg": "操作失败", "data": msg},
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
@@ -194,7 +194,7 @@ class CertViewSet(viewsets.ModelViewSet):
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
-        certs = instantiate_batch(conf)
+        certs = instantiate_batch(msg)
         response_data = []
         print("create certs", certs)
         for uid in certs.keys():
@@ -338,7 +338,7 @@ class CertViewSet(viewsets.ModelViewSet):
             "recipients": recipients,
             "filename_format": data["filename_format"]
         }
-        return conf
+        return True, conf
 
     def create_cert_data(self, data, cert_wsid, cert_image_wsid):
         return {
