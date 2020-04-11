@@ -26,14 +26,38 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# 配置允许跨域请求的URL
-CORS_ORIGIN_WHITELIST  =(
-     'http://127.0.0.1:8080',
-)
+# # 配置允许跨域请求的URL
+# CORS_ORIGIN_WHITELIST  =(
+#      'http://127.0.0.1:8080',
+# )
 
 # 防止CSRF
 CSRF_TRUSTED_ORIGINS = (
     'change.allowed.com',
+)
+
+# 添加参数为true
+CORS_ORIGIN_ALLOW_ALL = True
+#下面这些可以不用设置
+#跨域增加忽略
+CORS_ALLOW_CREDENTIALS = True
+# 设置白名单
+# 配置允许跨域请求的URL
+CORS_ORIGIN_WHITELIST = ('*')
+CORS_ALLOW_METHODS = (  'DELETE',  'GET',  'OPTIONS',  'PATCH',  'POST',  'PUT',  'VIEW', )
+CORS_ALLOW_HEADERS = (
+'XMLHttpRequest',
+'X_FILENAME',
+'accept-encoding',
+'authorization',
+'content-type',
+'dnt',
+'origin',
+'user-agent',
+'x-csrftoken',
+'x-requested-with',
+'Pragma',
+'API-HTTP-AUTHORIZATION',
 )
 
 REST_FRAMEWORK = {
