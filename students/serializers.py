@@ -10,7 +10,7 @@
 """
 from rest_framework import serializers
 from rest_framework_mongoengine import serializers as mongoengine_serializers
-from students.models import StudentToken, Student, UnsignCert
+from students.models import StudentToken, Student
 
 
 class StudentSerializer(serializers.ModelSerializer):
