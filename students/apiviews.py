@@ -15,7 +15,6 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_mongoengine import viewsets as mongoengine_viewsets
 from students.instantiate_v2_certificate_batch import instantiate_batch
 from rest_framework_mongoengine.viewsets import GenericViewSet
 from schools.models import School
@@ -28,7 +27,6 @@ from students.auth import StudentAuthentication
 from students.models import Student, StudentToken
 from .serializers import StudentSerializer
 from students.hashers import check_password
-import json
 
 
 class StudentCreate(generics.CreateAPIView):
@@ -88,19 +86,22 @@ class StudentLogin(APIView):
                 "error": e
             }}, content_type="application/json")
 
+
 class StudentViewSet(viewsets.ModelViewSet):
     authentication_classes = (StudentAuthentication,)
-    permission_classes = (BasePermission, )
+    permission_classes = (BasePermission,)
     serializer_class = StudentSerializer
     queryset = Student.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({"code": 1000, "msg": "操作成功", "data": {"student":serializer.data}})
+        return Response({"code": 1000, "msg": "操作成功", "data": {"student": serializer.data}})
+
 
 class CertDetailViewSet(mixins.RetrieveModelMixin,
-                   GenericViewSet):
+                        GenericViewSet):
+    authentication_classes = (StudentAuthentication,)
     permission_classes = (BasePermission,)
     serializer_class = CertDetailSerializer
     queryset = CertDetail.objects.all()
@@ -109,6 +110,15 @@ class CertDetailViewSet(mixins.RetrieveModelMixin,
     @action(methods=['get'], detail=True, url_path='detail', url_name='cert-info')
     def cert_info(self, request, *args, **kwargs):
         instance = self.get_object()
+        obj = Cert.objects.filter(cert_id=instance.wsid).first()
+        if obj is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "未查询到证书的创建者"}},
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json")
+        if obj.student_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.chain_address:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -124,6 +134,7 @@ class CertDetailViewSet(mixins.RetrieveModelMixin,
     def destroy(self, request, *args, **kwargs):
         pass
 
+
 class CertViewSet(viewsets.ModelViewSet):
     authentication_classes = (StudentAuthentication,)
     permission_classes = (BasePermission,)
@@ -137,16 +148,16 @@ class CertViewSet(viewsets.ModelViewSet):
                                    student_pubkey="ecdsa-koblitz-pubkey:" + self.request.user.chain_address).first()
         if cert:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已存在"}},
-                     status=status.HTTP_400_BAD_REQUEST,
-                     content_type="application/json"
-                     )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
         issuer_name = request.data["issuer_name"]
         result, msg = self.create_conf(issuer_name, request.data)
         if result is False:
             return Response({"code": 1001, "msg": "操作失败", "data": msg},
-                     status=status.HTTP_400_BAD_REQUEST,
-                     content_type="application/json"
-                     )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
         certs = instantiate_batch(msg)
         response_data = []
         for uid in certs.keys():
@@ -167,33 +178,33 @@ class CertViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         if instance is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
-                     status=status.HTTP_400_BAD_REQUEST,
-                     content_type="application/json"
-                     )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
         if instance.student_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.chain_address:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的创建者"}},
-                     status=status.HTTP_401_UNAUTHORIZED,
-                     content_type="application/json")
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
         if instance.status == 1:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已经发布，无法修改"}},
-                     status=status.HTTP_401_UNAUTHORIZED,
-                     content_type="application/json")
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
 
         issuer_name = request.data["issuer_name"]
         result, msg = self.create_conf(issuer_name, request.data)
         print("template conf", msg)
         if result is False:
             return Response({"code": 1001, "msg": "操作失败", "data": msg},
-                     status=status.HTTP_400_BAD_REQUEST,
-                     content_type="application/json"
-                     )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
         old_cert = CertDetail.objects.filter(wsid=instance.cert_id).first()
         print("old_cert", old_cert)
         if old_cert is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
-                     status=status.HTTP_400_BAD_REQUEST,
-                     content_type="application/json"
-                     )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
         certs = instantiate_batch(msg)
         response_data = []
         print("create certs", certs)
@@ -243,7 +254,8 @@ class CertViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             print(e)
-            return Response(data={"code": 1001, "msg": "删除失败", "data": {"err": "证书不存在"}}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={"code": 1001, "msg": "删除失败", "data": {"err": "证书不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -270,16 +282,16 @@ class CertViewSet(viewsets.ModelViewSet):
         (Eg. return a list of items that is specific to the user)
         """
         assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method."
-            % self.__class__.__name__
+                "'%s' should either include a `queryset` attribute, "
+                "or override the `get_queryset()` method."
+                % self.__class__.__name__
         )
 
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
             # Ensure queryset is re-evaluated on each request.
             user = self.request.user
-            queryset = queryset.filter(student_pubkey="ecdsa-koblitz-pubkey:"+ user.chain_address).all()
+            queryset = queryset.filter(student_pubkey="ecdsa-koblitz-pubkey:" + user.chain_address).all()
         return queryset
 
     def perform_destroy(self, instance):
@@ -309,7 +321,7 @@ class CertViewSet(viewsets.ModelViewSet):
         recipients = [
             {
                 "identity": self.request.user.email_address,
-                "name": self.request.user.first_name +" "+ self.request.user.last_name,
+                "name": self.request.user.first_name + " " + self.request.user.last_name,
                 "pubkey": self.request.user.chain_address,
                 "additional_fields": ""
             }
@@ -342,16 +354,16 @@ class CertViewSet(viewsets.ModelViewSet):
 
     def create_cert_data(self, data, cert_wsid, cert_image_wsid):
         return {
-        "cert_image_wsid": cert_image_wsid,
-        "certificate_description": data["badge"]["description"],
-        "certificate_title": data["badge"]["name"],
-        "criteria_narrative": data["badge"]["criteria"]["narrative"],
-        "cert_id": cert_wsid,
-        "student_name": data["recipientProfile"]["name"],
-        "student_pubkey": data["recipientProfile"]["publicKey"],
-        "email": data["recipient"]["identity"],
-        "school_pubkey": data["verification"]["publicKey"],
-        "status": 0
+            "cert_image_wsid": cert_image_wsid,
+            "certificate_description": data["badge"]["description"],
+            "certificate_title": data["badge"]["name"],
+            "criteria_narrative": data["badge"]["criteria"]["narrative"],
+            "cert_id": cert_wsid,
+            "student_name": data["recipientProfile"]["name"],
+            "student_pubkey": data["recipientProfile"]["publicKey"],
+            "email": data["recipient"]["identity"],
+            "school_pubkey": data["verification"]["publicKey"],
+            "status": 0
         }
 
     def data_check(self):
