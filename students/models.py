@@ -5,7 +5,7 @@ import uuid
 
 from django.db import models
 from students.hashers import make_password
-from mongoengine import DynamicDocument, ListField, StringField, DictField, DateTimeField
+from mongoengine import DynamicDocument, StringField, DictField
 
 
 # Create your models here.
@@ -42,7 +42,3 @@ class StudentToken(models.Model):
 
     def __str__(self):
         return self.key
-
-class UnsignCert(DynamicDocument):
-    wsid = StringField(default="cert_wsid_" + str(uuid.uuid4()), primary_key=True)
-    data = DictField()

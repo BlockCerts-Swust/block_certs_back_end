@@ -21,12 +21,12 @@ from rest_framework_mongoengine.viewsets import GenericViewSet
 from schools.models import School
 
 from common import common_function
-from common.models import Cert
-from common.serializers import CertSerializer
+from common.models import Cert, CertDetail
+from common.serializers import CertSerializer, CertDetailSerializer
 from students import helpers
 from students.auth import StudentAuthentication
-from students.models import Student, StudentToken, UnsignCert
-from .serializers import StudentSerializer, UnsignCertSerializer
+from students.models import Student, StudentToken
+from .serializers import StudentSerializer
 from students.hashers import check_password
 import json
 
@@ -99,11 +99,11 @@ class StudentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response({"code": 1000, "msg": "操作成功", "data": {"student":serializer.data}})
 
-class UnsignCertViewSet(mixins.RetrieveModelMixin,
+class CertDetailViewSet(mixins.RetrieveModelMixin,
                    GenericViewSet):
     permission_classes = (BasePermission,)
-    serializer_class = UnsignCertSerializer
-    queryset = UnsignCert.objects.all()
+    serializer_class = CertDetailSerializer
+    queryset = CertDetail.objects.all()
     lookup_field = 'wsid'
 
     @action(methods=['get'], detail=True, url_path='detail', url_name='cert-info')
@@ -151,11 +151,11 @@ class CertViewSet(viewsets.ModelViewSet):
         response_data = []
         for uid in certs.keys():
             # 存在mongodb里面的数据
-            unsign_cert_data = {"data": certs[uid]}
-            unsign_cert = UnsignCert(**unsign_cert_data)
-            unsign_cert.save()
+            unsign_cert_data = {"unsign_cert": certs[uid]}
+            cert_detail = CertDetail(**unsign_cert_data)
+            cert_detail.save()
             # 存在mysql里面的证书信息
-            cert_data = self.create_cert_data(certs[uid], unsign_cert.wsid, cert_image_wsid)
+            cert_data = self.create_cert_data(certs[uid], cert_detail.wsid, cert_image_wsid)
             serializer = self.get_serializer(data=cert_data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -187,7 +187,7 @@ class CertViewSet(viewsets.ModelViewSet):
                      status=status.HTTP_400_BAD_REQUEST,
                      content_type="application/json"
                      )
-        old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
+        old_cert = CertDetail.objects.filter(wsid=instance.cert_id).first()
         print("old_cert", old_cert)
         if old_cert is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
@@ -200,8 +200,8 @@ class CertViewSet(viewsets.ModelViewSet):
         for uid in certs.keys():
             # unsign_cert = UnsignCert(**certs[uid])
             print("id", instance.cert_id)
-            new_cert_data = {"data": certs[uid]}
-            old_cert.update(**new_cert_data)
+            new_unsign_cert_data = {"unsign_cert": certs[uid]}
+            old_cert.update(**new_unsign_cert_data)
             cert_data = self.create_cert_data(certs[uid], old_cert.wsid,
                                               request.data["cert_image_wsid"])
             serializer = self.get_serializer(instance, data=cert_data, partial=partial)
@@ -237,7 +237,7 @@ class CertViewSet(viewsets.ModelViewSet):
                 return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书已经发布，无法删除"}},
                                 status=status.HTTP_401_UNAUTHORIZED,
                                 content_type="application/json")
-            old_cert = UnsignCert.objects.filter(wsid=instance.cert_id).first()
+            old_cert = CertDetail.objects.filter(wsid=instance.cert_id).first()
             old_cert.delete()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)

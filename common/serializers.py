@@ -11,7 +11,7 @@
 
 from rest_framework_mongoengine import serializers as mongoengine_serializers
 from rest_framework import serializers
-from common.models import File, Cert
+from common.models import File, Cert, CertDetail
 
 
 class FileSerializer(mongoengine_serializers.DocumentSerializer):
@@ -25,4 +25,10 @@ class CertSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cert
+        fields = "__all__"
+
+class CertDetailSerializer(mongoengine_serializers.DynamicDocumentSerializer):
+
+    class Meta:
+        model = CertDetail
         fields = "__all__"

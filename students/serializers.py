@@ -35,10 +35,3 @@ class StudentSerializer(serializers.ModelSerializer):
         # ensure that tokens are created when user is created in UserCreate view
         StudentToken.objects.create(student=student)
         return student
-
-
-class UnsignCertSerializer(mongoengine_serializers.DynamicDocumentSerializer):
-
-    class Meta:
-        model = UnsignCert
-        fields = "__all__"
