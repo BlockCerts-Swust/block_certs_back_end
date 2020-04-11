@@ -12,11 +12,13 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from schools.apiviews import SchoolCreate, SchoolLogin, SchoolViewSet, RevocationView
+from schools.apiviews import SchoolCreate, SchoolLogin, SchoolViewSet, RevocationView, CertSchoolDetailViewSet, CertIssueViewSet
+
 router = DefaultRouter()
 
 router.register(r'v1/api/schools', SchoolViewSet, basename='school')
-# router.register(r"v1/api/schools", RevocationViewSet, basename='school')
+router.register(r"v1/api/schools/certificates", CertSchoolDetailViewSet, basename='school')
+router.register(r"v1/api/schools/certificates", CertIssueViewSet, basename='school')
 
 urlpatterns = [
     path("v1/api/schools/register", SchoolCreate.as_view(), name="school_create"),

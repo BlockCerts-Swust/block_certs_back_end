@@ -21,6 +21,8 @@ from schools.serializers import SchoolSerializer, RevocationSerializer
 from schools.models import School, SchoolToken, Revocation
 from students.hashers import check_password
 from common.common_function import get_image_base_64, get_full_url
+from common.models import Cert, CertDetail
+from common.serializers import CertDetailSerializer, CertSerializer
 import ast
 
 
@@ -267,6 +269,40 @@ class RevocationView(APIView):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+class CertSchoolDetailViewSet(viewsets.ModelViewSet):
+    authentication_classes = (SchoolAuthentication, )
+    permission_classes = (BasePermission,)
+    serializer_class = CertDetailSerializer
+    queryset = CertDetail.objects.all()
+    lookup_field = 'wsid'
+
+    @action(methods=['get'], detail=True, url_path='detail', url_name='cert-info')
+    def cert_info(self, request, *args, **kwargs):
+        instance = self.get_object()
+        obj = Cert.objects.filter(cert_id=instance.wsid).first()
+        if obj is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "未查询到证书的创建者"}},
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json")
+        if obj.school_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.public_key:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的颁发者"}},
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        pass
+
+    def retrieve(self, request, *args, **kwargs):
+        pass
+
+    def update(self, request, *args, **kwargs):
+        pass
+
+    def destroy(self, request, *args, **kwargs):
+        pass
 
 class CertIssueViewSet(viewsets.ModelViewSet):
     pass
