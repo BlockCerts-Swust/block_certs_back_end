@@ -13,8 +13,6 @@ from common.models import File, Cert
 from common.serializers import FileSerializer, CertSerializer
 import hashlib
 
-from students.auth import StudentAuthentication
-
 
 class FileViewSet(mongoengine_viewsets.ModelViewSet):
     permission_classes = (BasePermission,)
@@ -50,6 +48,16 @@ class FileViewSet(mongoengine_viewsets.ModelViewSet):
     @action(methods=['DELETE'], detail=True, url_path='delete', url_name='delete')
     def file_delete(self, request, *args, **kwargs):
         instance = self.get_object()
+        cert = Cert.objects.filter(cert_image_wsid=instance.wsid).first()
+        if cert is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该文件的证书不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
+        if cert.student_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.chain_address:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限删除, 您不是该证书的创建者"}},
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -58,6 +66,16 @@ class FileViewSet(mongoengine_viewsets.ModelViewSet):
     @action(methods=['get'], detail=True, url_path='download', url_name='download')
     def file_download(self, request, *args, **kwargs):
         instance = self.get_object()
+        cert = Cert.objects.filter(cert_image_wsid=instance.wsid).first()
+        if cert is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该文件的证书不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST,
+                            content_type="application/json"
+                            )
+        if cert.student_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.chain_address or cert.school_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.public_key:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限下载该证书"}},
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
         instance.file.seek(0)
         files = instance.file.read()
         return HttpResponse(

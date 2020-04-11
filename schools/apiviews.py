@@ -267,3 +267,6 @@ class RevocationView(APIView):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+class CertIssueViewSet(viewsets.ModelViewSet):
+    pass
