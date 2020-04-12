@@ -9,7 +9,6 @@ from common.models import File, Cert, CertDetail
 from common.serializers import FileSerializer
 import hashlib
 from common.cert_verifier.verifier import verify_certificate_json
-import json
 
 
 class FileViewSet(mongoengine_viewsets.ModelViewSet):
