@@ -165,9 +165,25 @@ class RevocationView(APIView):
 
 
     def post(self, request, public_key):
-        data = request.data
-        data["public_key"] = public_key
-        serializer = self.get_serializer(data=request.data)
+        cert_id = request.data["cert_id"]
+        public_key_ = "ecdsa-koblitz-pubkey:" + public_key
+        cert_instance = Cert.objects.filter(cert_id=cert_id).filter(school_pubkey=public_key_).first()
+        if cert_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该学校的证书列表中没有该证书"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        cert_detail_instance = CertDetail.objects.filter(wsid=cert_id).first()
+        if cert_detail_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书详细信息不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if cert_detail_instance.block_cert == {}:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书未发布"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        data = {
+            "uuid": cert_detail_instance.block_cert["id"],
+            "revocationReason": request.data["revocationReason"],
+            "public_key": public_key
+        }
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -177,13 +193,29 @@ class RevocationView(APIView):
 
 
     def put(self, request, public_key):
-        uuid = request.data["uuid"]
+        cert_id = request.data["cert_id"]
+        public_key_ = "ecdsa-koblitz-pubkey:" + public_key
+        cert_instance = Cert.objects.filter(cert_id=cert_id).filter(school_pubkey=public_key_).first()
+        if cert_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该学校的证书列表中没有该证书"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        cert_detail_instance = CertDetail.objects.filter(wsid=cert_id).first()
+        if cert_detail_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书详细信息不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if cert_detail_instance.block_cert == {}:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书未发布"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        uuid = cert_detail_instance.block_cert["id"]
         obj = Revocation.objects.filter(uuid=uuid).filter(public_key=public_key).first()
         if obj is None:
-            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书ID不存在"}},
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不在撤销列表中，无法更新"}},
                             status=status.HTTP_400_BAD_REQUEST)
-        data = request.data
-        data["public_key"] = public_key
+        data = {
+            "uuid": cert_detail_instance.block_cert["id"],
+            "revocationReason": request.data["revocationReason"],
+            "public_key": public_key
+        }
         serializer = self.get_serializer(obj, data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -217,10 +249,23 @@ class RevocationView(APIView):
         })
 
     def delete(self, request, public_key):
-        uuid = request.data["uuid"]
+        cert_id = request.data["cert_id"]
+        public_key_ = "ecdsa-koblitz-pubkey:" + public_key
+        cert_instance = Cert.objects.filter(cert_id=cert_id).filter(school_pubkey=public_key_).first()
+        if cert_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该学校的证书列表中没有该证书"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        cert_detail_instance = CertDetail.objects.filter(wsid=cert_id).first()
+        if cert_detail_instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书详细信息不存在"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if cert_detail_instance.block_cert == {}:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书未发布"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        uuid = cert_detail_instance.block_cert["id"]
         obj = Revocation.objects.filter(uuid=uuid).filter(public_key=public_key).first()
         if obj is None:
-            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书ID不存在"}},
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不在撤销列表中, 无法删除"}},
                             status=status.HTTP_400_BAD_REQUEST)
         self.perform_destroy(obj)
         return Response({"code": 1000, "msg": "操作成功", "data": {"uuid": uuid}}, status=status.HTTP_204_NO_CONTENT)
