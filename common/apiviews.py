@@ -1,17 +1,15 @@
 # Create your views here.
-import json
-from wsgiref.util import FileWrapper
-
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from django.http import HttpResponse
 from rest_framework_mongoengine import viewsets as mongoengine_viewsets
-from rest_framework import viewsets
-from common.models import File, Cert
-from common.serializers import FileSerializer, CertSerializer
+from common.models import File, Cert, CertDetail
+from common.serializers import FileSerializer
 import hashlib
+from common.cert_verifier.verifier import verify_certificate_json
+import json
 
 
 class FileViewSet(mongoengine_viewsets.ModelViewSet):
@@ -82,3 +80,20 @@ class FileViewSet(mongoengine_viewsets.ModelViewSet):
             files,
             content_type=instance.file.content_type,
         )
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def certificate_verify(request):
+    cert_id = request.data["cert_id"]
+    cert = Cert.objects.filter(cert_id=cert_id).first()
+    if cert is None:
+        return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}})
+    if cert.status == 0:
+        return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书没有发布, 无法验证"}})
+    block_cert = CertDetail.objects.filter(wsid = cert_id).first()
+    if block_cert is None:
+        return Response({"code": 1001, "msg": "操作失败", "data": {"err": "获取证书详细失败"}})
+    result = verify_certificate_json(block_cert.block_cert)
+    return Response({"code": 1000, "msg": "操作成功", "data":result})

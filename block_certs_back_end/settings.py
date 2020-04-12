@@ -84,7 +84,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'schools',
     'students',
-    'verifier',
     'common'
 ]
 
