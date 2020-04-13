@@ -9,7 +9,7 @@
 @Description: 
 """
 import logging
-
+from threading import Thread
 from django.db.models import QuerySet
 from rest_framework_mongoengine.viewsets import GenericViewSet
 
@@ -404,28 +404,13 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             base_config = request.data
             base_config["unsigned_certificates"] = {cert_info.unsign_cert["id"]: cert_info.unsign_cert}
             parsed_config = config.get_config(base_config)
-            tx_id, certificates_to_issue = main(parsed_config)
-            if tx_id:
-                logging.info('Transaction id is %s', tx_id)
-                logging.info('certificates_to_issue %s', certificates_to_issue)
-                instance.txid = tx_id
-                instance.status = 1
-                instance.save()
-                for _, metadata in certificates_to_issue.items():
-                    cert_info_data = {"block_cert": metadata.blockcert}
-                    cert_info.update(**cert_info_data)
-                    break
-                return Response({
-                    "code": 1000, "msg": "操作成功", "data": self.get_serializer(instance).data},
-                    status=status.HTTP_200_OK,
-                    content_type="application/json"
-                )
-            else:
-                logging.error('Certificate issuing failed')
-                return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书颁发失败"}},
-                                status=status.HTTP_400_BAD_REQUEST,
-                                content_type="application/json")
-
+            t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
+            t.start()
+            instance.status = 2
+            instance.save()
+            return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书正在颁发中, 请稍后查看颁发状态"}},
+                            status=status.HTTP_200_OK,
+                            content_type="application/json")
         except Exception as ex:
             logging.error(ex, exc_info=True)
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书颁发失败"}},
@@ -460,3 +445,20 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             user = self.request.user
             queryset = queryset.filter(school_pubkey="ecdsa-koblitz-pubkey:" + user.public_key).all()
         return queryset
+
+    def issue_function(self, parsed_config, instance, cert_info):
+        tx_id, certificates_to_issue = main(parsed_config)
+        if tx_id:
+            logging.info('Transaction id is %s', tx_id)
+            logging.info('certificates_to_issue %s', certificates_to_issue)
+            instance.txid = tx_id
+            instance.status = 1
+            instance.save()
+            for _, metadata in certificates_to_issue.items():
+                cert_info_data = {"block_cert": metadata.blockcert}
+                cert_info.update(**cert_info_data)
+                break
+        else:
+            instance.status = 3
+            instance.save()
+            logging.error('Certificate issuing failed')
