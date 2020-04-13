@@ -28,6 +28,7 @@ class Cert(models.Model):
     student_pubkey = models.CharField(max_length=255)
     email = models.CharField(max_length=255)
     school_pubkey = models.CharField(max_length=255)
+    school_name = models.CharField(max_length=255)
     status = models.IntegerField(default=0)
     txid = models.CharField(max_length=255, blank=True)
     create_time = models.DateTimeField(default=timezone.now())
