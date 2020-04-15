@@ -24,7 +24,9 @@ def get_image_base_64(file_wsid):
         return False
 
 def get_full_url(path):
-    return BASE_URL+ path
+    if BASE_URL not in path:
+        return BASE_URL+ path
+    return path
 
 def get_file_download_url(file_wsid):
     try:

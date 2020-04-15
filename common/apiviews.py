@@ -5,6 +5,8 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from django.http import HttpResponse
 from rest_framework_mongoengine import viewsets as mongoengine_viewsets
+
+from common.common_function import get_full_url
 from common.models import File, Cert, CertDetail
 from common.serializers import FileSerializer
 import hashlib
@@ -74,5 +76,10 @@ def certificate_verify(request):
     block_cert = CertDetail.objects.filter(wsid = cert_id).first()
     if block_cert is None:
         return Response({"code": 1001, "msg": "操作失败", "data": {"err": "获取证书详细失败"}})
-    result = verify_certificate_json(block_cert.block_cert)
+    block_cert_data = block_cert.block_cert
+    block_cert_data["badge"]["image"] = get_full_url(block_cert_data["badge"]["image"])
+    block_cert_data["badge"]["issuer"]["id"] = get_full_url(block_cert_data["badge"]["issuer"]["id"])
+    block_cert_data["badge"]["issuer"]["revocationList"] = get_full_url(
+    block_cert_data["badge"]["issuer"]["revocationList"])
+    result = verify_certificate_json(block_cert_data)
     return Response({"code": 1000, "msg": "操作成功", "data":result})

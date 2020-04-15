@@ -342,7 +342,17 @@ class CertSchoolDetailViewSet(GenericViewSet):
                             status=status.HTTP_401_UNAUTHORIZED,
                             content_type="application/json")
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        data = serializer.data
+        data["unsign_cert"]["badge"]["image"] = get_full_url(data["unsign_cert"]["badge"]["image"])
+        data["unsign_cert"]["badge"]["issuer"]["id"] = get_full_url(data["unsign_cert"]["badge"]["issuer"]["id"])
+        data["unsign_cert"]["badge"]["issuer"]["revocationList"] = get_full_url(
+            data["unsign_cert"]["badge"]["issuer"]["revocationList"])
+        if data["block_cert"]:
+            data["block_cert"]["badge"]["image"] = get_full_url(data["unsign_cert"]["badge"]["image"])
+            data["block_cert"]["badge"]["issuer"]["id"] = get_full_url(data["unsign_cert"]["badge"]["issuer"]["id"])
+            data["block_cert"]["badge"]["issuer"]["revocationList"] = get_full_url(
+                data["block_cert"]["badge"]["issuer"]["revocationList"])
+        return Response(data)
 
 class CertIssueViewSet(viewsets.ModelViewSet):
     authentication_classes = (SchoolAuthentication,)
