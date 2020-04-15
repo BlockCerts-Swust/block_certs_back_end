@@ -15,6 +15,8 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from common.common_function import get_full_url
 from students.instantiate_v2_certificate_batch import instantiate_batch
 from rest_framework_mongoengine.viewsets import GenericViewSet
 from schools.models import School
@@ -120,7 +122,17 @@ class CertDetailViewSet(mixins.RetrieveModelMixin,
                             status=status.HTTP_401_UNAUTHORIZED,
                             content_type="application/json")
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        data = serializer.data
+        data["unsign_cert"]["badge"]["image"] = get_full_url(data["unsign_cert"]["badge"]["image"])
+        data["unsign_cert"]["badge"]["issuer"]["id"] = get_full_url(data["unsign_cert"]["badge"]["issuer"]["id"])
+        data["unsign_cert"]["badge"]["issuer"]["revocationList"] = get_full_url(
+            data["unsign_cert"]["badge"]["issuer"]["revocationList"])
+        if data["block_cert"]:
+            data["block_cert"]["badge"]["image"] = get_full_url(data["unsign_cert"]["badge"]["image"])
+            data["block_cert"]["badge"]["issuer"]["id"] = get_full_url(data["unsign_cert"]["badge"]["issuer"]["id"])
+            data["block_cert"]["badge"]["issuer"]["revocationList"] = get_full_url(
+                data["block_cert"]["badge"]["issuer"]["revocationList"])
+        return Response(data)
 
     def create(self, request, *args, **kwargs):
         pass
@@ -303,14 +315,14 @@ class CertViewSet(viewsets.ModelViewSet):
         if not issuer:
             return False, {"err": "学校不存在"}
         issuer_image = helpers.png_prefix + common_function.get_image_base_64(issuer.logo_file_wsid)
-        issuer_id = common_function.get_full_url(issuer.id_url)
+        issuer_id = issuer.id_url
         issuer_url = issuer.official_website
         issuer_email = issuer.email
         issuer_public_key = "ecdsa-koblitz-pubkey:" + issuer.public_key
         issuer_job_title = issuer.job_title
         signature_name = issuer.signature_name
         signature_image_wsid = issuer.signature_file_wsid
-        revocation_list = common_function.get_full_url(issuer.revocation_list)
+        revocation_list = issuer.revocation_list
         issuer_signature_lines = []
         issuer_signature_lines.append(
             {
@@ -326,9 +338,7 @@ class CertViewSet(viewsets.ModelViewSet):
                 "additional_fields": ""
             }
         ]
-        cert_image = common_function.get_file_download_url(data["cert_image_wsid"])
-        if cert_image is False:
-            return False, {"err": "证书文件不存在"}
+        cert_image ='/v1/api/files/' + data["cert_image_wsid"] + '/download'
         conf = {
             "badge_id": badge_id.replace("urn:uuid:", ""),
             "cert_image": cert_image,
