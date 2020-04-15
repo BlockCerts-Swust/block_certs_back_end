@@ -7,7 +7,7 @@ import logging
 import requests
 from cert_core import BlockchainType, BlockcertVersion, Chain
 from cert_core import PUBKEY_PREFIX
-
+from block_certs_back_end.settings import BASE_URL
 from common.cert_verifier import IssuerInfo, IssuerKey
 from common.cert_verifier import TransactionData
 from common.cert_verifier.errors import *
@@ -208,7 +208,7 @@ def get_field_or_default(data, field_name):
 
 def get_issuer_info(certificate_model):
     print("certificate_model.issuer.id", certificate_model.issuer.id)
-    issuer_json = get_remote_json(certificate_model.issuer.id)
+    issuer_json = get_remote_json(BASE_URL + certificate_model.issuer.id)
     if not issuer_json:
         raise Exception('Issuer URL returned no results ' + certificate_model.issuer.id)
 
@@ -218,7 +218,7 @@ def get_issuer_info(certificate_model):
     if v2ish:
         if 'revocationList' in certificate_model.certificate_json['badge']['issuer']:
             revocation_url = certificate_model.certificate_json['badge']['issuer']['revocationList']
-            revoked_json = get_remote_json(revocation_url)
+            revoked_json = get_remote_json(BASE_URL + revocation_url)
             if revoked_json and revoked_json['revokedAssertions']:
                 revoked_assertions = [r['id'] for r in revoked_json['revokedAssertions']]
 
