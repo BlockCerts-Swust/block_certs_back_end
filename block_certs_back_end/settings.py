@@ -181,4 +181,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-BASE_URL = 'http://127.0.0.1:8000'
+BASE_URL = 'http://74.82.214.120:8000'
