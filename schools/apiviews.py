@@ -12,7 +12,8 @@ import logging
 from threading import Thread
 from django.db.models import QuerySet
 from rest_framework_mongoengine.viewsets import GenericViewSet
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 logging.getLogger().setLevel(logging.INFO)
 from rest_framework import generics, status, viewsets
 from rest_framework.parsers import JSONParser
@@ -29,7 +30,7 @@ from schools.models import School, SchoolToken, Revocation
 from students.hashers import check_password
 from common.common_function import get_image_base_64, get_full_url
 from common.models import Cert, CertDetail
-from common.serializers import CertDetailSerializer, CertSerializer
+from common.serializers import CertDetailSerializer, CertSerializer, MyLimitOffset, CertFilter
 import ast
 
 
@@ -359,6 +360,8 @@ class CertIssueViewSet(viewsets.ModelViewSet):
     permission_classes = (BasePermission,)
     serializer_class = CertSerializer
     queryset = Cert.objects.all()
+    filter_backends = (DjangoFilterBackend,OrderingFilter)
+    filter_class = CertFilter
     lookup_field = 'cert_id'
 
     def create(self, request, *args, **kwargs):
@@ -382,14 +385,10 @@ class CertIssueViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        page_obj = MyLimitOffset()
+        page_certs = page_obj.paginate_queryset(queryset=queryset, request=request, view=self)
+        serializer = self.get_serializer(page_certs, many=True)
+        return page_obj.get_paginated_response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         pass

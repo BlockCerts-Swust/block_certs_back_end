@@ -15,7 +15,8 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 from common.common_function import get_full_url
 from students.instantiate_v2_certificate_batch import instantiate_batch
 from rest_framework_mongoengine.viewsets import GenericViewSet
@@ -23,7 +24,7 @@ from schools.models import School
 
 from common import common_function
 from common.models import Cert, CertDetail
-from common.serializers import CertSerializer, CertDetailSerializer
+from common.serializers import CertSerializer, CertDetailSerializer, MyLimitOffset, CertFilter
 from students import helpers
 from students.auth import StudentAuthentication
 from students.models import Student, StudentToken
@@ -152,6 +153,8 @@ class CertViewSet(viewsets.ModelViewSet):
     permission_classes = (BasePermission,)
     serializer_class = CertSerializer
     queryset = Cert.objects.all()
+    filter_backends = (DjangoFilterBackend,OrderingFilter)
+    filter_class = CertFilter
     lookup_field = 'cert_id'
 
     def create(self, request, *args, **kwargs):
@@ -241,13 +244,10 @@ class CertViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        page_obj = MyLimitOffset()
+        page_certs = page_obj.paginate_queryset(queryset=queryset, request=request, view=self)
+        serializer = self.get_serializer(page_certs, many=True)
+        return page_obj.get_paginated_response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         try:
