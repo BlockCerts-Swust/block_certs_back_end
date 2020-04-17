@@ -1,14 +1,15 @@
 # Create your views here.
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from django.http import HttpResponse
 from rest_framework_mongoengine import viewsets as mongoengine_viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 
-from common.common_function import get_full_url
 from common.models import File, Cert, CertDetail
-from common.serializers import FileSerializer
+from common.serializers import FileSerializer, CertVerifySerializer, CertFilter, MyLimitOffset
 import hashlib
 from common.cert_verifier.verifier import verify_certificate_json
 
@@ -79,3 +80,32 @@ def certificate_verify(request):
     block_cert_data = block_cert.block_cert
     result = verify_certificate_json(block_cert_data)
     return Response({"code": 1000, "msg": "操作成功", "data":result})
+
+
+class CertVerifyViewSet(viewsets.ModelViewSet):
+    authentication_classes = ()
+    permission_classes = ()
+    serializer_class = CertVerifySerializer
+    queryset = Cert.objects.all()
+    filter_backends = (DjangoFilterBackend,OrderingFilter)
+    filter_class = CertFilter
+    lookup_field = 'student_pubkey'
+
+    def create(self, request, *args, **kwargs):
+        pass
+
+    def retrieve(self, request, *args, **kwargs):
+        pass
+
+    def update(self, request, *args, **kwargs):
+        pass
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page_obj = MyLimitOffset()
+        page_certs = page_obj.paginate_queryset(queryset=queryset, request=request, view=self)
+        serializer = self.get_serializer(page_certs, many=True)
+        return page_obj.get_paginated_response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        pass
