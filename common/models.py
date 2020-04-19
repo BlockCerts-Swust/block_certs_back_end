@@ -35,6 +35,7 @@ class Cert(models.Model):
     # status=3 issue fail
     status = models.IntegerField(default=0)
     txid = models.CharField(max_length=255, blank=True)
+    chain = models.CharField(max_length=255)
     create_time = models.DateTimeField(default=timezone.now())
 
 class CertDetail(DynamicDocument):

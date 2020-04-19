@@ -181,7 +181,8 @@ class CertViewSet(viewsets.ModelViewSet):
             cert_detail = CertDetail(**unsign_cert_data)
             cert_detail.save()
             # 存在mysql里面的证书信息
-            cert_data = self.create_cert_data(certs[uid], cert_detail.wsid, cert_image_wsid, issuer_name)
+            cert_data = self.create_cert_data(certs[uid], cert_detail.wsid, cert_image_wsid, issuer_name,
+                                              request.data["chain"])
             serializer = self.get_serializer(data=cert_data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -229,7 +230,8 @@ class CertViewSet(viewsets.ModelViewSet):
             new_unsign_cert_data = {"unsign_cert": certs[uid]}
             old_cert.update(**new_unsign_cert_data)
             cert_data = self.create_cert_data(certs[uid], old_cert.wsid,
-                                              request.data["cert_image_wsid"], issuer_name)
+                                              request.data["cert_image_wsid"], issuer_name,
+                                              request.data["chain"])
             serializer = self.get_serializer(instance, data=cert_data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
@@ -362,7 +364,7 @@ class CertViewSet(viewsets.ModelViewSet):
         }
         return True, conf
 
-    def create_cert_data(self, data, cert_wsid, cert_image_wsid, issuer_name):
+    def create_cert_data(self, data, cert_wsid, cert_image_wsid, issuer_name, chain):
         return {
             "cert_image_wsid": cert_image_wsid,
             "certificate_description": data["badge"]["description"],
@@ -374,6 +376,7 @@ class CertViewSet(viewsets.ModelViewSet):
             "email": data["recipient"]["identity"],
             "school_pubkey": data["verification"]["publicKey"],
             "school_name": issuer_name,
+            "chain": chain,
             "status": 0
         }
 
