@@ -33,6 +33,7 @@ class Cert(models.Model):
     # status=1 issued
     # status=2 issuing
     # status=3 issue fail
+    # status=4 revoked
     status = models.IntegerField(default=0)
     txid = models.CharField(max_length=255, blank=True)
     chain = models.CharField(max_length=255)

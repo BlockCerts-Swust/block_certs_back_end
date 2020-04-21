@@ -187,6 +187,8 @@ class RevocationView(APIView):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        cert_instance.status = 4
+        cert_instance.save()
         headers = self.get_success_headers(serializer.data)
         return Response({"code": 1000, "msg": "操作成功", "data": {"revocation": serializer.data}},
                         status=status.HTTP_201_CREATED,
@@ -269,6 +271,8 @@ class RevocationView(APIView):
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不在撤销列表中, 无法删除"}},
                             status=status.HTTP_400_BAD_REQUEST)
         self.perform_destroy(obj)
+        cert_instance.status = 1
+        cert_instance.save()
         return Response({"code": 1000, "msg": "操作成功", "data": {"uuid": uuid}}, status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
