@@ -423,6 +423,7 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
             t.start()
             instance.status = 2
+            instance.chain = request.data["chain"]
             instance.save()
             return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书正在颁发中, 请稍后查看颁发状态"}},
                             status=status.HTTP_200_OK,

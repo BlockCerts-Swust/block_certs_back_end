@@ -36,7 +36,7 @@ class Cert(models.Model):
     # status=4 revoked
     status = models.IntegerField(default=0)
     txid = models.CharField(max_length=255, blank=True)
-    chain = models.CharField(max_length=255)
+    chain = models.CharField(max_length=255, blank=True)
     create_time = models.DateTimeField(default=timezone.now())
 
 class CertDetail(DynamicDocument):
