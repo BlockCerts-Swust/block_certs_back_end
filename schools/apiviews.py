@@ -202,6 +202,9 @@ class RevocationView(APIView):
         if cert_instance is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该学校的证书列表中没有该证书"}},
                             status=status.HTTP_400_BAD_REQUEST)
+        if cert_instance.status is not 4:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书未撤销, 无法更新撤销原因"}},
+                            status=status.HTTP_400_BAD_REQUEST)
         cert_detail_instance = CertDetail.objects.filter(wsid=cert_id).first()
         if cert_detail_instance is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书详细信息不存在"}},
