@@ -56,7 +56,7 @@ class CertFilter(django_filters.rest_framework.FilterSet):
     max_time = django_filters.DateTimeFilter(field_name="create_time", lookup_expr='lte')
     class Meta:
         model = Cert
-        fields = ['certificate_title', 'student_name', 'school_name', 'status', 'student_pubkey']
+        fields = ['certificate_title', 'student_name', 'school_name', 'status', 'student_pubkey', 'email']
 
 class CertVerifySerializer(serializers.ModelSerializer):
 

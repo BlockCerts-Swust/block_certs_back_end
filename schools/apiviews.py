@@ -187,6 +187,8 @@ class RevocationView(APIView):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        cert_instance.status = 4
+        cert_instance.save()
         headers = self.get_success_headers(serializer.data)
         return Response({"code": 1000, "msg": "操作成功", "data": {"revocation": serializer.data}},
                         status=status.HTTP_201_CREATED,
@@ -199,6 +201,9 @@ class RevocationView(APIView):
         cert_instance = Cert.objects.filter(cert_id=cert_id).filter(school_pubkey=public_key_).first()
         if cert_instance is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "该学校的证书列表中没有该证书"}},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if cert_instance.status is not 4:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书未撤销, 无法更新撤销原因"}},
                             status=status.HTTP_400_BAD_REQUEST)
         cert_detail_instance = CertDetail.objects.filter(wsid=cert_id).first()
         if cert_detail_instance is None:
@@ -269,6 +274,8 @@ class RevocationView(APIView):
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不在撤销列表中, 无法删除"}},
                             status=status.HTTP_400_BAD_REQUEST)
         self.perform_destroy(obj)
+        cert_instance.status = 1
+        cert_instance.save()
         return Response({"code": 1000, "msg": "操作成功", "data": {"uuid": uuid}}, status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
@@ -416,6 +423,7 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
             t.start()
             instance.status = 2
+            instance.chain = request.data["chain"]
             instance.save()
             return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书正在颁发中, 请稍后查看颁发状态"}},
                             status=status.HTTP_200_OK,
