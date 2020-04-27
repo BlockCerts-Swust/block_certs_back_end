@@ -418,6 +418,7 @@ class CertIssueViewSet(viewsets.ModelViewSet):
                             content_type="application/json")
         try:
             base_config = request.data
+            base_config["issuing_address"] = self.request.user.public_key
             base_config["unsigned_certificates"] = {cert_info.unsign_cert["id"]: cert_info.unsign_cert}
             parsed_config = config.get_config(base_config)
             t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
