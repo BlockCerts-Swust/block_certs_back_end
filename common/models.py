@@ -34,10 +34,12 @@ class Cert(models.Model):
     # status=2 issuing
     # status=3 issue fail
     # status=4 revoked
+    # status=5 refuse
     status = models.IntegerField(default=0)
     txid = models.CharField(max_length=255, blank=True)
     chain = models.CharField(max_length=255, blank=True)
     create_time = models.DateTimeField(default=timezone.now())
+    refuse_reason = models.CharField(max_length=255, blank=True)
 
 class CertDetail(DynamicDocument):
     wsid = StringField(default="cert_wsid_" + str(uuid.uuid4()), primary_key=True)

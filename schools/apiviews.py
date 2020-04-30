@@ -83,7 +83,7 @@ class SchoolLogin(APIView):
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
                 }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
-            SchoolToken.objects.update_or_create(school=school)
+            SchoolToken.objects.get_or_create(school=school)
             return Response({"code": 1000, "msg": "操作成功", "data": {"school":{
                 "context": school.context,
                 "type": school.type,
@@ -402,6 +402,38 @@ class CertIssueViewSet(viewsets.ModelViewSet):
 
     @action(methods=['POST'], detail=True, url_path='issue', url_name='cert-issue')
     def cert_issue(self, request, *args, **kwargs):
+        # instance = self.get_object()
+        # if instance is None:
+        #     return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
+        #                     status=status.HTTP_400_BAD_REQUEST,
+        #                     content_type="application/json")
+        # if instance.school_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.public_key:
+        #     return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的颁发者"}},
+        #                     status=status.HTTP_401_UNAUTHORIZED,
+        #                     content_type="application/json")
+        # cert_info = CertDetail.objects.filter(wsid=instance.cert_id).first()
+        # if cert_info is None:
+        #     return Response({"code": 1001, "msg": "操作失败", "data": {"err": "获取证书详细信息失败"}},
+        #                     status=status.HTTP_401_UNAUTHORIZED,
+        #                     content_type="application/json")
+        # try:
+        #     base_config = request.data
+        #     base_config["issuing_address"] = self.request.user.public_key
+        #     base_config["unsigned_certificates"] = {cert_info.unsign_cert["id"]: cert_info.unsign_cert}
+        #     parsed_config = config.get_config(base_config)
+        #     t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
+        #     t.start()
+        #     instance.status = 2
+        #     instance.chain = request.data["chain"]
+        #     instance.save()
+        #     return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书正在颁发中, 请稍后查看颁发状态"}},
+        #                     status=status.HTTP_200_OK,
+        #                     content_type="application/json")
+        # except Exception as ex:
+        #     logging.error(ex, exc_info=True)
+        #     return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书颁发失败"}},
+        #                     status=status.HTTP_400_BAD_REQUEST,
+        #                     content_type="application/json")
         instance = self.get_object()
         if instance is None:
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
@@ -416,25 +448,34 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             return Response({"code": 1001, "msg": "操作失败", "data": {"err": "获取证书详细信息失败"}},
                             status=status.HTTP_401_UNAUTHORIZED,
                             content_type="application/json")
-        try:
-            base_config = request.data
-            base_config["issuing_address"] = self.request.user.public_key
-            base_config["unsigned_certificates"] = {cert_info.unsign_cert["id"]: cert_info.unsign_cert}
-            parsed_config = config.get_config(base_config)
-            t = Thread(target=self.issue_function, args=(parsed_config,instance, cert_info, ))
-            t.start()
-            instance.status = 2
-            instance.chain = request.data["chain"]
-            instance.save()
-            return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书正在颁发中, 请稍后查看颁发状态"}},
-                            status=status.HTTP_200_OK,
-                            content_type="application/json")
-        except Exception as ex:
-            logging.error(ex, exc_info=True)
-            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书颁发失败"}},
+        block_cert = request.data["block_cert"]
+        tx_id = request.data["tx_id"]
+        instance.txid = tx_id
+        instance.status = 1
+        instance.save()
+        cert_info_data = {"block_cert": block_cert}
+        cert_info.update(**cert_info_data)
+        return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书颁发成功"}},
+                        status=status.HTTP_200_OK,
+                        content_type="application/json")
+
+    @action(methods=['POST'], detail=True, url_path='issue', url_name='cert-refuse')
+    def cert_refuse(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance is None:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "证书不存在"}},
                             status=status.HTTP_400_BAD_REQUEST,
                             content_type="application/json")
-
+        if instance.school_pubkey != "ecdsa-koblitz-pubkey:" + self.request.user.public_key:
+            return Response({"code": 1001, "msg": "操作失败", "data": {"err": "没有权限, 您不是该证书的颁发者"}},
+                            status=status.HTTP_401_UNAUTHORIZED,
+                            content_type="application/json")
+        instance.status = 5
+        instance.refuse_reason = request.data["reason"]
+        instance.save()
+        return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "拒绝颁发成功"}},
+                        status=status.HTTP_200_OK,
+                        content_type="application/json")
 
     def get_queryset(self):
         """

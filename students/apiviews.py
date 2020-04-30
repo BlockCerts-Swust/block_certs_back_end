@@ -73,7 +73,7 @@ class StudentLogin(APIView):
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
                 }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
-            StudentToken.objects.update_or_create(student=student)
+            StudentToken.objects.get_or_create(student=student)
             return Response({"code": 1000, "msg": "操作成功", "data": {"student": {
                 "email_address": student.email_address,
                 "first_name": student.first_name,
