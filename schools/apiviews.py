@@ -459,7 +459,7 @@ class CertIssueViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK,
                         content_type="application/json")
 
-    @action(methods=['POST'], detail=True, url_path='issue', url_name='cert-refuse')
+    @action(methods=['POST'], detail=True, url_path='refuse', url_name='cert-refuse')
     def cert_refuse(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance is None:
