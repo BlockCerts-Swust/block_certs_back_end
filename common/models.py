@@ -23,7 +23,7 @@ class Cert(models.Model):
     certificate_description = models.CharField(max_length=255)
     certificate_title = models.CharField(max_length=255)
     criteria_narrative = models.CharField(max_length=588)
-    cert_id = models.CharField(max_length=255)
+    cert_id = models.CharField(max_length=255, unique=True)
     student_name = models.CharField(max_length=255)
     student_pubkey = models.CharField(max_length=255)
     email = models.CharField(max_length=255)

@@ -10,9 +10,13 @@
 """
 
 import base64
+import hashlib
+import time
+
 import requests as req
 from io import BytesIO
 from block_certs_back_end.settings import BASE_URL
+from block_certs_back_end.settings import SECRET_KEY
 def get_image_base_64(file_wsid):
     try:
         response = req.get(BASE_URL+'/v1/api/files/' + file_wsid + '/download')
@@ -38,3 +42,8 @@ def get_file_download_url(file_wsid):
     except Exception as e:
         print(e)
         return False
+
+def md5(username):
+    m = hashlib.md5(bytes(username, encoding='utf-8'))
+    m.update(bytes(SECRET_KEY + str(time.time()), encoding='utf-8'))
+    return m.hexdigest()

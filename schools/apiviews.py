@@ -11,6 +11,7 @@
 import logging
 from threading import Thread
 from django.db.models import QuerySet
+from django.utils import timezone
 from rest_framework_mongoengine.viewsets import GenericViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
@@ -28,7 +29,7 @@ from schools.cert_issuer.issue_certificates import main
 from schools.serializers import SchoolSerializer, RevocationSerializer
 from schools.models import School, SchoolToken, Revocation
 from students.hashers import check_password
-from common.common_function import get_image_base_64, get_full_url
+from common.common_function import get_image_base_64, get_full_url, md5
 from common.models import Cert, CertDetail
 from common.serializers import CertDetailSerializer, CertSerializer, MyLimitOffset, CertFilter
 import ast
@@ -83,7 +84,11 @@ class SchoolLogin(APIView):
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
                 }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
 
-            SchoolToken.objects.get_or_create(school=school)
+            defaults = {
+                "token": md5(email),
+                "created_time": timezone.now()
+            }
+            SchoolToken.objects.update_or_create(school=school, defaults=defaults)
             return Response({"code": 1000, "msg": "操作成功", "data": {"school":{
                 "context": school.context,
                 "type": school.type,
