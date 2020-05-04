@@ -457,6 +457,7 @@ class CertIssueViewSet(viewsets.ModelViewSet):
         tx_id = request.data["tx_id"]
         instance.txid = tx_id
         instance.status = 1
+        instance.chain = request.data["chain"]
         instance.save()
         cert_info_data = {"block_cert": block_cert}
         cert_info.update(**cert_info_data)
