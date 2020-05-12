@@ -9,6 +9,7 @@
 @Description: 
 """
 from django.db.models import QuerySet
+from django.utils import timezone
 from rest_framework import generics, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
@@ -17,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from common.common_function import get_full_url
+from common.common_function import get_full_url, md5
 from students.instantiate_v2_certificate_batch import instantiate_batch
 from rest_framework_mongoengine.viewsets import GenericViewSet
 from schools.models import School
@@ -72,8 +73,11 @@ class StudentLogin(APIView):
                 return Response({
                     "code": 1001, "msg": "操作失败", "data": {"error": "账号或密码错误"}
                 }, status=status.HTTP_401_UNAUTHORIZED, content_type="application/json")
-
-            StudentToken.objects.update_or_create(student=student)
+            defaults = {
+                "token": md5(email_address),
+                "created_time": timezone.now()
+            }
+            StudentToken.objects.update_or_create(student=student, defaults=defaults)
             return Response({"code": 1000, "msg": "操作成功", "data": {"student": {
                 "email_address": student.email_address,
                 "first_name": student.first_name,
