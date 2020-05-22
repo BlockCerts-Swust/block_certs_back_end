@@ -33,6 +33,10 @@ from common.common_function import get_image_base_64, get_full_url, md5
 from common.models import Cert, CertDetail
 from common.serializers import CertDetailSerializer, CertSerializer, MyLimitOffset, CertFilter
 import ast
+import requests
+from django.conf import settings
+
+DEFAULT_TIMEOUT = ""
 
 
 class SchoolCreate(generics.CreateAPIView):
@@ -54,6 +58,7 @@ class SchoolCreate(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        sendMailOnAppRegist(request.data)
         headers = self.get_success_headers(serializer.data)
         return Response({"code": 1000, "msg": "操作成功", "data": {"school": serializer.data}},
                         status=status.HTTP_201_CREATED,
@@ -461,6 +466,10 @@ class CertIssueViewSet(viewsets.ModelViewSet):
         instance.save()
         cert_info_data = {"block_cert": block_cert}
         cert_info.update(**cert_info_data)
+        # Send mail to recipient.
+        print("cert_info: ", cert_info) 
+        print("cert_info_data: ", cert_info_data) 
+        #sendMailOnCertIssue(cert_info):
         return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书颁发成功"}},
                         status=status.HTTP_200_OK,
                         content_type="application/json")
@@ -527,3 +536,69 @@ class CertIssueViewSet(viewsets.ModelViewSet):
             instance.status = 3
             instance.save()
             logging.error('Certificate issuing failed')
+
+class MakeMailRequest(object):
+    @staticmethod
+    def post(url, data=None, headers=None, files=None):
+        try:
+            response = requests.request('POST', url=url, json=data, headers=headers, files=files)
+            if response.status_code >= 200 and response.status_code < 300:
+                return response.json()
+            else:
+                print(response.json())
+        except Exception as e:
+            print(e)
+
+def sendMailOnAppRegist(mailObject):
+    url = settings.DEFAULT_BASE_URL_FOR_EMAIL + "/message/common-message-send"
+    headers = {
+        'Content-Type': "application/json",
+        #'API-HTTP-AUTHORIZATION': api_token
+    }
+    data = {
+        "source":{
+            "service":"wesign-mss-user-app",
+            "timestamp": timezone.now()
+        },
+        "targetType":"ENVELOPE",
+        "action": "REGIST_APP",
+        "user": [
+        	{
+            	"email": {
+	                "dest": mailObject["email"],
+	                "variableArray": [mailObject["name"], "2","3",settings.BASE_URL+"/login","Blockcerts signit app registration"
+	                ]
+	            }
+        	}
+        ] 
+    }
+    reqResponse = MakeMailRequest.post(url=url, data=data, headers=headers)
+    print("Post response is: ", reqResponse)
+    return reqResponse
+
+def sendMailOnCertIssue(mailObject):
+    url = settings.DEFAULT_BASE_URL_FOR_EMAIL + "/message/common-message-send"
+    headers = {
+        'Content-Type': "application/json",
+        #'API-HTTP-AUTHORIZATION': api_token
+    }
+    data = {
+        "source":{
+            "service":"wesign-mss-user-app",
+            "timestamp": timezone.now()
+        },
+        "targetType":"ENVELOPE",
+        "action": "ISSUE_CERT",
+        "user": [
+        	{
+            	"email": {
+	                "dest": mailObject["recipient_Email_Address"],
+	                "variableArray": [mailObject["recipient_Name"],mailObject["cert_Title"], "3","4",settings.BASE_URL+"/login","Certificate issuance"
+	                ]
+	            }
+        	}
+        ] 
+    }
+    reqResponse = MakeMailRequest.post(url=url, data=data, headers=headers)
+    print("Post response is: ", reqResponse)
+    return reqResponse

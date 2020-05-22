@@ -31,6 +31,10 @@ from students.auth import StudentAuthentication
 from students.models import Student, StudentToken
 from .serializers import StudentSerializer
 from students.hashers import check_password
+import requests
+from django.conf import settings
+
+DEFAULT_TIMEOUT = ""
 
 
 class StudentCreate(generics.CreateAPIView):
@@ -43,6 +47,7 @@ class StudentCreate(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        sendMailOnAppRegist(request.data)
         headers = self.get_success_headers(serializer.data)
         return Response({"code": 1000, "msg": "操作成功", "data": {"student": serializer.data}},
                         status=status.HTTP_201_CREATED,
@@ -383,3 +388,42 @@ class CertViewSet(viewsets.ModelViewSet):
 
     def data_check(self):
         pass
+
+class MakeMailRequest(object):
+    @staticmethod
+    def post(url, data=None, headers=None, files=None):
+        try:
+            response = requests.request('POST', url=url, json=data, headers=headers, files=files)
+            if response.status_code >= 200 and response.status_code < 300:
+                return response.json()
+            else:
+                print(response.json())
+        except Exception as e:
+            print(e)
+
+def sendMailOnAppRegist(mailObject):
+    url = settings.DEFAULT_BASE_URL_FOR_EMAIL + "/message/common-message-send"
+    headers = {
+        'Content-Type': "application/json",
+        #'API-HTTP-AUTHORIZATION': api_token
+    }
+    data = {
+        "source":{
+            "service":"wesign-mss-user-app",
+            "timestamp": timezone.now()
+        },
+        "targetType":"ENVELOPE",
+        "action": "REGIST_APP",
+        "user": [
+        	{
+            	"email": {
+	                "dest": mailObject["email_address"],
+	                "variableArray": [mailObject["first_name"], "2","3",settings.BASE_URL+"/login","Blockcerts signit app registration"
+	                ]
+	            }
+        	}
+        ] 
+    }
+    reqResponse = MakeMailRequest.post(url=url, data=data, headers=headers)
+    print("Email Post response is: ", reqResponse)
+    return reqResponse
