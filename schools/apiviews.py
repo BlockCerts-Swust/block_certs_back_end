@@ -465,11 +465,16 @@ class CertIssueViewSet(viewsets.ModelViewSet):
         instance.chain = request.data["chain"]
         instance.save()
         cert_info_data = {"block_cert": block_cert}
-        cert_info.update(**cert_info_data)
-        # Send mail to recipient.
-        print("cert_info: ", cert_info) 
-        print("cert_info_data: ", cert_info_data) 
-        #sendMailOnCertIssue(cert_info):
+        cert_info.update(**cert_info_data) 
+        #print("cert_info_data: ", cert_info_data) # Get details from block_cert object.
+        # Build object for mail.
+        mailObj = {
+                    "recipient_Email_Address":block_cert["recipient"]["identity"],
+                    "recipient_Name":block_cert["recipientProfile"]["name"],
+                    "cert_Title":block_cert["badge"]["name"]
+                }
+        # Send mail.
+        sendMailOnCertIssue(mailObj)
         return Response({"code": 1000, "msg": "操作成功", "data": {"msg": "证书颁发成功"}},
                         status=status.HTTP_200_OK,
                         content_type="application/json")
