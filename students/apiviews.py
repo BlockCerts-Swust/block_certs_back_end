@@ -407,10 +407,11 @@ def sendMailOnAppRegist(mailObject):
         'Content-Type': "application/json",
         #'API-HTTP-AUTHORIZATION': api_token
     }
+    print("TimeZone: ", timezone.now())
     data = {
         "source":{
             "service":"wesign-mss-user-app",
-            "timestamp": timezone.now()
+            "timestamp":str(timezone.now())
         },
         "targetType":"ENVELOPE",
         "action": "REGIST_APP",

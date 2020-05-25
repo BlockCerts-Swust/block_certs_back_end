@@ -563,7 +563,7 @@ def sendMailOnAppRegist(mailObject):
     data = {
         "source":{
             "service":"wesign-mss-user-app",
-            "timestamp": timezone.now()
+            "timestamp": str(timezone.now())
         },
         "targetType":"ENVELOPE",
         "action": "REGIST_APP",
@@ -587,10 +587,11 @@ def sendMailOnCertIssue(mailObject):
         'Content-Type': "application/json",
         #'API-HTTP-AUTHORIZATION': api_token
     }
+    #print("Mail Object to use: ", mailObject)
     data = {
         "source":{
             "service":"wesign-mss-user-app",
-            "timestamp": timezone.now()
+            "timestamp": str(timezone.now())
         },
         "targetType":"ENVELOPE",
         "action": "ISSUE_CERT",
@@ -605,5 +606,5 @@ def sendMailOnCertIssue(mailObject):
         ] 
     }
     reqResponse = MakeMailRequest.post(url=url, data=data, headers=headers)
-    print("Post response is: ", reqResponse)
+    print("Email Post response is: ", reqResponse)
     return reqResponse
