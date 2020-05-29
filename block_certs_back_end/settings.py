@@ -28,7 +28,7 @@ ALLOWED_HOSTS = []
 
 # 配置允许跨域请求的URL
 CORS_ORIGIN_WHITELIST  =(
-     'http://127.0.0.1:8080',
+     'http://10.10.3.2:8080',
 )
 
 # 防止CSRF
@@ -128,7 +128,7 @@ DATABASES = {
         'NAME': 'block_certs',
         'USER': 'root',
         'PASSWORD': '123456@signit',
-        'HOST': '74.82.214.120',
+        'HOST': '10.10.3.2',
         'PORT': 3306
     }
 }
@@ -137,7 +137,7 @@ import mongoengine
 
 mongoengine.connect(
     db="block_certs",
-    host="74.82.214.120",
+    host="10.10.3.2",
     port=27017,
     username="root",
     password="123456@signit",
@@ -181,6 +181,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-BASE_URL = 'http://127.0.0.1:8000'
+BASE_URL = 'http://10.10.3.2:8000'
 
 DEFAULT_BASE_URL_FOR_EMAIL = "http://10.10.9.176:1723"
