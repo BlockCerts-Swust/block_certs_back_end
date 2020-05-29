@@ -49,5 +49,8 @@ class SchoolToken(models.Model):
 class Revocation(models.Model):
     uuid = models.CharField(max_length=128)
     revocationReason = models.CharField(max_length=128)
-    public_key = models.CharField(max_length=128, unique=True)
+    public_key = models.CharField(max_length=128)
     created_time = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (("uuid", "public_key"),)
