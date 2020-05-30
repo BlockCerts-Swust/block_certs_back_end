@@ -182,3 +182,5 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 BASE_URL = 'http://74.82.214.120:8000'
+
+DEFAULT_BASE_URL_FOR_EMAIL = "http://10.10.9.176:1723"
