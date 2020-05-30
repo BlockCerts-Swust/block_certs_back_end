@@ -24,7 +24,7 @@ SECRET_KEY = 'bs^+-2jt3h=da3#opb$9-)%3z7143w&yh)i1audb#)y-@y!s%a'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["10.10.3.2"]
 
 # 配置允许跨域请求的URL
 CORS_ORIGIN_WHITELIST  =(
