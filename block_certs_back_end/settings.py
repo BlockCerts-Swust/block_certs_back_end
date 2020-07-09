@@ -128,7 +128,7 @@ DATABASES = {
         'NAME': 'block_certs',
         'USER': 'root',
         'PASSWORD': '123456@signit',
-        'HOST': 'mysql',
+        'HOST': '10.10.3.2',
         'PORT': 3306
     }
 }
@@ -137,7 +137,7 @@ import mongoengine
 
 mongoengine.connect(
     db="block_certs",
-    host="mongodb",
+    host="10.10.3.2",
     port=27017,
     username="root",
     password="123456@signit",

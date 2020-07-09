@@ -1,11 +1,5 @@
-# nginx镜像
-FROM daocloud.io/nginx
-
-# 删除原有配置文件，创建静态资源文件夹和ssl证书保存文件夹
-RUN rm /etc/nginx/conf.d/default.conf \
-&& mkdir -p /usr/share/nginx/html/static \
-&& mkdir -p /usr/share/nginx/html/media \
-&& mkdir -p /usr/share/nginx/ssl
-
-# 添加配置文件
-ADD ./nginx.conf /etc/nginx/conf.d/
+FROM nginx
+# # Add the Nginx configuration file
+# ADD ./nginx/nginx.conf /etc/nginx/nginx.conf
+# Copy over static assets from the client application
+COPY ./frontend/dist /usr/share/nginx/html

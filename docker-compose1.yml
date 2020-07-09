@@ -24,8 +24,10 @@ services:
       options:
         max-size: 10m
         max-file: "10"
+    networks:
+      - nginx_network
 
-  mongodb:
+  mongo:
     image: mongo
     ports:
       - 27017:27017
@@ -38,9 +40,11 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root       #初始化管理员用户名和密码
       - MONGO_INITDB_ROOT_PASSWORD=123456@signit
     tty: true
+    networks:
+      - nginx_network
 
   web:
-    build: block_certs_back_end
+    build: .
     image: block_certs_back_end
     logging:
       driver: json-file
@@ -50,9 +54,38 @@ services:
     volumes:
       - /root/block_certs_back_end:/block_certs_back_end
     restart: always
-    links:
-      - mysql
-      - mongo
     depends_on:
       - mysql
       - mongo
+    networks:
+      - nginx_network
+  nginx:
+    image: nginx:1.13
+    build:
+      context: .
+      dockerfile: ./config/nginx/Dockerfile
+    ports:
+      - 8000:80
+    volumes:
+      - /root/block_certs_back_end/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - web
+      - mysql
+      - mongo
+    networks:
+      - nginx_network
+
+  celery:
+    build: .
+    command: celery -A saturday worker -l info
+    volumes:
+      - /root/block_certs_back_end:/block_certs_back_end
+    depends_on:
+      - mysql
+      - mongo
+    networks:
+      - nginx_network
+
+networks:  # <-- and here
+  nginx_network:
+    driver: bridge
