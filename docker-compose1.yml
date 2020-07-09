@@ -1,0 +1,58 @@
+version: "3"
+
+services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - 3306:3306
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: always
+    volumes:
+      - /root/volumn/mysql/data:/var/lib/mysql
+    environment:
+      # 根目录密码默认123456，可以根据需求改密码
+      # 修改的时候要同时修改secret文件的密码
+      - MYSQL_ROOT_PASSWORD=123456@signit
+      # 这个选项会自动创建数据库
+      - MYSQL_DATABASE=block_certs
+      - TZ=Asia/Shanghai
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "10"
+
+  mongodb:
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - "/root/data/configdb:/data/configdb"
+      - "/root/data/db:/data/db"
+    command: mongod --auth
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root       #初始化管理员用户名和密码
+      - MONGO_INITDB_ROOT_PASSWORD=123456@signit
+    tty: true
+
+  web:
+    build: block_certs_back_end
+    image: block_certs_back_end
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "10"
+    volumes:
+      - /root/block_certs_back_end:/block_certs_back_end
+    restart: always
+    links:
+      - mysql
+      - mongo
+    depends_on:
+      - mysql
+      - mongo
