@@ -11,7 +11,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     restart: always
     volumes:
-      - /root/volumn/mysql/data:/var/lib/mysql
+      - /volumn/mysql/data:/var/lib/mysql
     environment:
       # 根目录密码默认123456，可以根据需求改密码
       # 修改的时候要同时修改secret文件的密码
@@ -28,12 +28,12 @@ services:
       - nginx_network
 
   mongo:
-    image: mongo
+    image: mongo:latest
     ports:
       - 27017:27017
     volumes:
-      - "/root/data/configdb:/data/configdb"
-      - "/root/data/db:/data/db"
+      - "/data/configdb:/data/configdb"
+      - "/data/db:/data/db"
     command: mongod --auth
     restart: always
     environment:
@@ -45,6 +45,7 @@ services:
 
   web:
     build: .
+    command: bash -c "python3 /block_certs_back_end/manage.py makemigrations && python3 /block_certs_back_end/manage.py migrate --noinput && gunicorn block_certs_back_end.wsgi -b 0.0.0.0:8000"
     image: block_certs_back_end
     logging:
       driver: json-file
@@ -52,7 +53,7 @@ services:
         max-size: 10m
         max-file: "10"
     volumes:
-      - /root/block_certs_back_end:/block_certs_back_end
+      - .:/block_certs_back_end
     restart: always
     depends_on:
       - mysql
@@ -63,11 +64,11 @@ services:
     image: nginx:1.13
     build:
       context: .
-      dockerfile: ./config/nginx/Dockerfile
+      dockerfile: ./nginx/Dockerfile
     ports:
       - 8000:80
     volumes:
-      - /root/block_certs_back_end/nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - web
       - mysql
@@ -77,9 +78,9 @@ services:
 
   celery:
     build: .
-    command: celery -A saturday worker -l info
+    command: celery -A block_certs_back_end worker -l info
     volumes:
-      - /root/block_certs_back_end:/block_certs_back_end
+      - .:/block_certs_back_end
     depends_on:
       - mysql
       - mongo

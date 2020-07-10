@@ -1,9 +1,12 @@
+amqp==2.6.0
 appdirs==1.4.3
 asgiref==3.2.3
 asn1crypto==1.3.0
 attrs==19.3.0
 Automat==20.2.0
+billiard==3.6.3.0
 bson==0.5.8
+celery==4.4.6
 cert-core==2.1.9
 cert-schema==2.1.6
 certifi==2019.11.28
@@ -45,6 +48,7 @@ itsdangerous==1.1.0
 Jinja2==2.11.1
 jsonpath-rw==1.4.0
 jsonschema==3.2.0
+kombu==4.6.11
 MarkupSafe==1.1.1
 merkletools==1.0.2
 mock==2.0.0
@@ -85,6 +89,7 @@ tox==3.14.6
 Twisted==20.3.0
 urllib3==1.25.8
 validators==0.14.3
+vine==1.3.0
 virtualenv==20.0.16
 Werkzeug==1.0.1
 zipp==3.1.0
