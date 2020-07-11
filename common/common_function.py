@@ -15,11 +15,14 @@ import time
 
 import requests as req
 from io import BytesIO
-from block_certs_back_end.settings import BASE_URL
+#from block_certs_back_end.settings import BASE_URL
 from block_certs_back_end.settings import SECRET_KEY
+
+BASE_URL="http://10.10.3.2:8000"
+
 def get_image_base_64(file_wsid):
     try:
-        response = req.get(BASE_URL+'/v1/api/files/' + file_wsid + '/download')
+        response = req.get('http://web:8000/v1/api/files/' + file_wsid + '/download')
         ls_f = base64.b64encode(BytesIO(response.content).read()).decode('utf-8')
         # 打印出这个base64编码
         return ls_f
