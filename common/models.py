@@ -41,10 +41,9 @@ class Cert(models.Model):
     create_time = models.DateTimeField(default=timezone.now())
     refuse_reason = models.CharField(max_length=255, blank=True)
 
-cert_id = str(uuid.uuid4())
 
 class CertDetail(DynamicDocument):
-    wsid = StringField(default="cert_wsid_" + cert_id, primary_key=True)
+    wsid = StringField(primary_key=True)
     unsign_cert = DictField()
     sign_cert = DictField()
     block_cert = DictField()

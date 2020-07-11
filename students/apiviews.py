@@ -8,6 +8,8 @@
 @Version   : 1.0
 @Description: 
 """
+import uuid
+
 from django.db.models import QuerySet
 from django.utils import timezone
 from rest_framework import generics, status, viewsets, mixins
@@ -186,7 +188,7 @@ class CertViewSet(viewsets.ModelViewSet):
         response_data = []
         for uid in certs.keys():
             # 存在mongodb里面的数据
-            unsign_cert_data = {"unsign_cert": certs[uid]}
+            unsign_cert_data = {"wsid": "cert_wsid_" + str(uuid.uuid4()), "unsign_cert": certs[uid]}
             cert_detail = CertDetail(**unsign_cert_data)
             cert_detail.save()
             # 存在mysql里面的证书信息
