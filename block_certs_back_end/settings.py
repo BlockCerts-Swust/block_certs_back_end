@@ -24,11 +24,11 @@ SECRET_KEY = 'bs^+-2jt3h=da3#opb$9-)%3z7143w&yh)i1audb#)y-@y!s%a'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["10.10.3.2"]
+ALLOWED_HOSTS = ["127.0.0.1"]
 
 # 配置允许跨域请求的URL
 CORS_ORIGIN_WHITELIST  =(
-     'http://10.10.3.2:80',
+     'http://127.0.0.1:8080',
 )
 
 # 防止CSRF
@@ -128,7 +128,7 @@ DATABASES = {
         'NAME': 'block_certs',
         'USER': 'root',
         'PASSWORD': '123456@signit',
-        'HOST': 'mysql',
+        'HOST': '10.10.3.2',
         'PORT': 3306
     }
 }
@@ -137,7 +137,7 @@ import mongoengine
 
 mongoengine.connect(
     db="block_certs",
-    host="mongo",
+    host="10.10.3.2",
     port=27017,
     username="root",
     password="123456@signit",

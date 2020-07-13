@@ -9,7 +9,7 @@
 @Description: 
 """
 from django.urls import path
-from common.apiviews import FileViewSet, certificate_verify, CertVerifyViewSet
+from common.apiviews import FileViewSet, Verify, CertVerifyViewSet
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -19,6 +19,7 @@ router.register(r'v1/api/files', FileViewSet, basename='file')
 router.register(r'v1/api/certificate/verify_list', CertVerifyViewSet, basename='cert-verify')
 
 urlpatterns = [
-    path(r'v1/api/certificate/verify',certificate_verify)
+    # path(r'v1/api/certificate/verify',certificate_verify)
+    path(r'v1/api/certificate/verify',Verify.as_view({"post": "certificate_verify"}))
 ]
 urlpatterns = router.urls + urlpatterns
