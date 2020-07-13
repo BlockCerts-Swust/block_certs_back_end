@@ -15,8 +15,9 @@ import time
 
 import requests as req
 from io import BytesIO
-from block_certs_back_end.settings import BASE_URL
+# from block_certs_back_end.settings import BASE_URL
 from block_certs_back_end.settings import SECRET_KEY
+BASE_URL = "http://10.10.3.2:8000"
 
 def get_image_base_64(file_wsid):
     try:
