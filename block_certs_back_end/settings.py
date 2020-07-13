@@ -181,6 +181,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-BASE_URL = 'http://web:8000'
+BASE_URL = 'http://10.10.3.2:8000'
 
 DEFAULT_BASE_URL_FOR_EMAIL = "http://10.10.9.176:1723"
