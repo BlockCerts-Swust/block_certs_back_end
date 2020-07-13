@@ -155,7 +155,9 @@ class BlockcypherConnector(TransactionLookupConnector):
 
 
 def get_remote_json(the_url):
-    r = requests.get(the_url, timeout=60) # timeout is in seconds
+    print(the_url)
+    r = requests.get(the_url+"/", timeout=60) # timeout is in seconds
+    print(r.text)
     if r.status_code != 200:
         logging.error('Error looking up url=%s, status_code=%d', the_url, r.status_code)
         print('Error looking up url=%s, status_code=%d', the_url, r.status_code)
@@ -211,6 +213,7 @@ def get_field_or_default(data, field_name):
 def get_issuer_info(certificate_model):
     print("certificate_model.issuer.id", certificate_model.issuer.id)
     issuer_json = get_remote_json(BASE_URL + certificate_model.issuer.id)
+    print("BASE_URL + id", BASE_URL + certificate_model.issuer.id)
     if not issuer_json:
         raise Exception('Issuer URL returned no results ' + certificate_model.issuer.id)
 

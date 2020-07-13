@@ -24,7 +24,7 @@ SECRET_KEY = 'bs^+-2jt3h=da3#opb$9-)%3z7143w&yh)i1audb#)y-@y!s%a'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["10.10.3.2"]
+ALLOWED_HOSTS = ["10.10.3.2","web"]
 
 # 配置允许跨域请求的URL
 CORS_ORIGIN_WHITELIST  =(
@@ -181,6 +181,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-BASE_URL = 'http://10.10.3.2:8000'
+BASE_URL = 'http://web:8000'
 
 DEFAULT_BASE_URL_FOR_EMAIL = "http://10.10.9.176:1723"
