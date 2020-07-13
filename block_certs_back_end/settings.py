@@ -181,6 +181,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# 内部代码使用
 BASE_URL = 'http://web:8000'
+
+# 外部代码使用
+BASE_URL_external = 'http://10.10.3.2:8000'
 
 DEFAULT_BASE_URL_FOR_EMAIL = "http://10.10.9.176:1723"

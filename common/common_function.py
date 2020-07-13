@@ -15,14 +15,13 @@ import time
 
 import requests as req
 from io import BytesIO
-#from block_certs_back_end.settings import BASE_URL
+from block_certs_back_end.settings import BASE_URL, BASE_URL_external
 from block_certs_back_end.settings import SECRET_KEY
 
-BASE_URL="http://10.10.3.2:8000"
 
 def get_image_base_64(file_wsid):
     try:
-        response = req.get('http://web:8000/v1/api/files/' + file_wsid + '/download')
+        response = req.get(BASE_URL + '/v1/api/files/' + file_wsid + '/download')
         ls_f = base64.b64encode(BytesIO(response.content).read()).decode('utf-8')
         # 打印出这个base64编码
         return ls_f
@@ -31,13 +30,13 @@ def get_image_base_64(file_wsid):
         return False
 
 def get_full_url(path):
-    if BASE_URL not in path:
-        return BASE_URL+ path
+    if BASE_URL_external not in path:
+        return BASE_URL_external+ path
     return path
 
 def get_file_download_url(file_wsid):
     try:
-        url = BASE_URL+'/v1/api/files/' + file_wsid + '/download'
+        url = BASE_URL_external+'/v1/api/files/' + file_wsid + '/download'
         response = req.get(url)
         if response.status_code == 200:
             return url
