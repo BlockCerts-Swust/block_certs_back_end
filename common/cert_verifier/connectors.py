@@ -158,10 +158,12 @@ def get_remote_json(the_url):
     r = requests.get(the_url, timeout=60) # timeout is in seconds
     if r.status_code != 200:
         logging.error('Error looking up url=%s, status_code=%d', the_url, r.status_code)
+        print('Error looking up url=%s, status_code=%d', the_url, r.status_code)
         return None
     else:
         remote_json = r.json()
         logging.debug('Found results at url=%s', the_url)
+        print('Found results at url=%s', the_url)
         return remote_json
 
 
