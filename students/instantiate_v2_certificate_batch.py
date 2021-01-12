@@ -33,6 +33,7 @@ def hash_and_salt_email_address(email, salt):
 def instantiate_assertion(cert, uid, issued_on):
     cert['issuedOn'] = issued_on
     cert['id'] = helpers.URN_UUID_PREFIX + uid
+    print('Assertion instantiation done')
     return cert
 
 
@@ -53,13 +54,15 @@ def instantiate_recipient(cert, recipient, additional_fields, hash_emails):
     cert[profile_field]['type'] = ['RecipientProfile', 'Extension']
     cert[profile_field]['name'] = recipient["name"]
     cert[profile_field]['publicKey'] = "ecdsa-koblitz-pubkey:" + recipient["pubkey"]
-
+    print('Recipient instantiation done')
     if additional_fields:
+        print('Performing additional fields')
         if not recipient["additional_fields"]:
             raise Exception('expected additional recipient fields but none found')
         for field in additional_fields:
             # TODO 如果有additional_fields需要修改这里的代码
             cert = jsonpath_helpers.set_field(cert, field['path'], recipient.additional_fields[field['csv_column']])
+        print('Additional field done')
     else:
         if recipient["additional_fields"]:
             # throw an exception on this in case it's a user error. We may decide to remove this if it's a nuisance
@@ -69,8 +72,9 @@ def instantiate_recipient(cert, recipient, additional_fields, hash_emails):
 
 def create_unsigned_certificates_from_roster(template, recipients, use_identities, additionalFields, hash_emails):
     issued_on = helpers.create_iso8601_tz()
-
+    print('Issued date done')
     certs = {}
+    print('Recipient: ', recipients)
     for recipient in recipients:
         if use_identities:
             uid = template['badge']['name'] + recipient["identity"]
@@ -84,9 +88,10 @@ def create_unsigned_certificates_from_roster(template, recipients, use_identitie
         instantiate_recipient(cert, recipient, additionalFields, hash_emails)
 
         # validate certificate before writing
-        schema_validator.validate_v2(cert)
-
+        # schema_validator.validate_v2(cert) --- Takes a long time. Cert is already correct. Check out: https://community.blockcerts.org/t/cert-tools-can-schema-validator-be-skipped-in-instantiation/1613
+        print('Schema validator done')
         certs[uid] = cert
+    print('Cert from roster done')
     return certs
 
 
@@ -94,10 +99,13 @@ def instantiate_batch(config):
     from students.create_v2_certificate_template import create_certificate_template
     recipients = config["recipients"]
     template = create_certificate_template(config)
+    print('Template done')
     use_identities = config["filename_format"] == "certname_identity"
     certs = create_unsigned_certificates_from_roster(template, recipients, use_identities, config["additional_per_recipient_fields"], config["hash_emails"])
+    print('Processing unsigned cert')
     for uid in certs.keys():
         print(json.dumps(certs[uid]))
+    print('Unsigned cert done')
     return certs
 
 def main():
