@@ -128,7 +128,7 @@ DATABASES = {
         'NAME': 'block_certs',
         'USER': 'root',
         'PASSWORD': '123456@signit',
-        'HOST': '74.82.214.120',
+        'HOST': '127.0.0.1',
         'PORT': 3306
     }
 }
@@ -137,12 +137,12 @@ import mongoengine
 
 mongoengine.connect(
     db="block_certs",
-    host="74.82.214.120",
+    host="127.0.0.1",
     port=27017,
-    username="root",
-    password="123456@signit",
-    authentication_mechanism="SCRAM-SHA-1",
-    authentication_source='admin'
+    #username="root",
+    #password="123456@signit",
+    #authentication_mechanism="SCRAM-SHA-1",
+    #authentication_source='admin'
 )
 
 # Password validation
